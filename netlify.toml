@@ -1,0 +1,40 @@
+# OUTLASTED - Vite + React App Configuration
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Force Vite build, not Next.js
+[build.processing]
+  skip_processing = false
+
+# Netlify Functions for FPL data sync
+[[functions]]
+  directory = "netlify/functions"
+
+[functions."sync-fpl"]
+  schedule = "0 * * * *"
+
+# SPA routing - redirect all routes to index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Development settings
+[dev]
+  command = "npm run dev"
+  port = 5173
+  publish = "dist"
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; connect-src 'self' https:; font-src 'self' https:;"
