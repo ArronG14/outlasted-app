@@ -5,6 +5,7 @@ import { Dashboard } from './pages/Dashboard';
 import { JoinPage } from './pages/JoinPage';
 import { InvitePage } from './pages/InvitePage';
 import { RoomPage } from './pages/RoomPage';
+import { FixturesPage } from './pages/FixturesPage';
 import { useAuth } from './hooks/useAuth';
 
 function LandingWrapper() {
@@ -47,6 +48,10 @@ function App() {
         <Route 
           path="/rooms/:id" 
           element={user ? <RoomPage /> : <Navigate to="/" replace />} 
+        />
+        <Route 
+          path="/fixtures" 
+          element={user ? <FixturesPage /> : <Navigate to="/" replace />} 
         />
       </Routes>
     </Router>

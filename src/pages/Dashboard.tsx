@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, Users, Trophy, Plus } from 'lucide-react';
+import { Clock, Users, Trophy, Plus, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { NextDeadline } from '../components/dashboard/NextDeadline';
 import { UpcomingFixtures } from '../components/dashboard/UpcomingFixtures';
@@ -66,6 +66,14 @@ export function Dashboard() {
             className="border-[#262626] text-[#D4D4D4] hover:bg-[#262626]"
           >
             Join Room
+          </Button>
+          <Button 
+            onClick={() => navigate('/fixtures')}
+            variant="outline" 
+            className="border-[#262626] text-[#D4D4D4] hover:bg-[#262626]"
+          >
+            <Calendar size={20} />
+            View Fixtures
           </Button>
         </div>
 
