@@ -209,7 +209,11 @@ export class RoomService {
         .eq('room_id', roomId);
 
       if (!playersError && playersData) {
-        players = playersData;
+        // Clean up players data - ensure profiles are never null
+        players = playersData.map(player => ({
+          ...player,
+          profiles: player.profiles || { display_name: 'Player', avatar_url: null }
+        }));
         console.log('Players loaded:', players);
       } else {
         console.log('Players fetch failed:', playersError);
