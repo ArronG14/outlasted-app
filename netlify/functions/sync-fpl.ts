@@ -151,7 +151,7 @@ async function upsertGameweeks(gameweeks: FPLGameweek[]): Promise<number> {
   console.log(`Upserting ${gameweeks.length} gameweeks...`);
   
   const { error } = await supabase
-    .from('fpl_gameweeks')
+    .from('gameweeks')
     .upsert(
       gameweeks.map(gw => ({
         gw: gw.id,
