@@ -6,9 +6,12 @@ import { GameweekFixtures } from '../components/rooms/GameweekFixtures';
 import { PickInterface } from '../components/rooms/PickInterface';
 import { DealSystem } from '../components/rooms/DealSystem';
 import { WinnerCelebration } from '../components/rooms/WinnerCelebration';
+import { LiveScores } from '../components/rooms/LiveScores';
+import { RematchSystem } from '../components/rooms/RematchSystem';
 import { RoomService } from '../services/roomService';
 import { GameStateService } from '../services/gameStateService';
 import { EliminationService } from '../services/eliminationService';
+import { LiveScoreService } from '../services/liveScoreService';
 import { useAuth } from '../hooks/useAuth';
 
 interface RoomDetails {
@@ -233,6 +236,18 @@ export function RoomPage() {
               }}
             />
 
+            {/* Live Scores */}
+            {room.status === 'active' && (
+              <LiveScores
+                gameweek={room.current_gameweek}
+                roomId={room.id}
+                onResultsUpdated={() => {
+                  loadRoomDetails();
+                  loadGameState();
+                }}
+              />
+            )}
+
             {/* Current Gameweek Fixtures */}
             {room.status === 'active' && (
               <GameweekFixtures
@@ -241,6 +256,17 @@ export function RoomPage() {
                 // onTeamSelect={handleTeamSelect}
                 // selectedTeam={selectedTeam}
                 // usedTeams={usedTeams}
+              />
+            )}
+
+            {/* Rematch System */}
+            {room.status === 'completed' && (
+              <RematchSystem
+                roomId={room.id}
+                onRematchStarted={() => {
+                  loadRoomDetails();
+                  loadGameState();
+                }}
               />
             )}
 
