@@ -131,20 +131,35 @@ export class RoomService {
   }
 
   static async getRoomDetails(roomId: string) {
-    const { data, error } = await supabase
+    // First get the room data
+    const { data: roomData, error: roomError } = await supabase
       .from('rooms')
-      .select(`
-        *,
-        profiles:host_id (display_name),
-        room_players (
-          *,
-          profiles (display_name, avatar_url)
-        )
-      `)
+      .select('*')
       .eq('id', roomId)
       .single();
 
-    if (error) throw error;
-    return data;
+    if (roomError) throw roomError;
+
+    // Then get the host profile
+    const { data: hostProfile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', roomData.host_id)
+      .single();
+
+    // Then get room players
+    const { data: players } = await supabase
+      .from('room_players')
+      .select(`
+        *,
+        profiles (display_name, avatar_url)
+      `)
+      .eq('room_id', roomId);
+
+    return {
+      ...roomData,
+      profiles: hostProfile,
+      room_players: players || []
+    };
   }
 }
