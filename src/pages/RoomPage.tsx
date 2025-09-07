@@ -13,6 +13,8 @@ import { RoomService } from '../services/roomService';
 import { GameStateService } from '../services/gameStateService';
 import { EliminationService } from '../services/eliminationService';
 import { LiveScoreService } from '../services/liveScoreService';
+import { PlayerStatusService } from '../services/playerStatusService';
+import { PlayerProfile } from '../components/rooms/PlayerProfile';
 import { useAuthSimple } from '../hooks/useAuthSimple';
 
 interface RoomDetails {
@@ -51,6 +53,11 @@ export function RoomPage() {
   const [error, setError] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
+  const [playerStatuses, setPlayerStatuses] = useState<Array<{
+    playerId: string;
+    playerName: string;
+    status: any;
+  }>>([]);
   const [showWinnerCelebration, setShowWinnerCelebration] = useState(false);
   const [winner, setWinner] = useState<any>(null);
 
@@ -81,11 +88,27 @@ export function RoomPage() {
       const roomData = await RoomService.getRoomDetails(id);
       console.log('Room data loaded:', roomData);
       setRoom(roomData);
+      
+      // Load player statuses for current gameweek
+      if (roomData) {
+        await loadPlayerStatuses(roomData.current_gameweek);
+      }
     } catch (err) {
       console.error('Error loading room details:', err);
       setError(err instanceof Error ? err.message : 'Failed to load room');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPlayerStatuses = async (gameweek: number) => {
+    if (!id) return;
+
+    try {
+      const statuses = await PlayerStatusService.getAllPlayersStatus(id, gameweek);
+      setPlayerStatuses(statuses);
+    } catch (err) {
+      console.error('Error loading player statuses:', err);
     }
   };
 
@@ -272,30 +295,49 @@ export function RoomPage() {
             <div className="bg-[#262626] rounded-xl p-6">
               <h2 className="text-lg font-semibold mb-4">Players</h2>
               <div className="space-y-3">
-                {room.room_players.map((player) => (
-                  <div key={player.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-[#404040] rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium">
-                          {player.profiles.display_name.charAt(0).toUpperCase()}
+                {playerStatuses.length > 0 ? (
+                  playerStatuses.map((playerStatus) => {
+                    const player = room.room_players.find(p => p.player_id === playerStatus.playerId);
+                    if (!player) return null;
+                    
+                    return (
+                      <PlayerProfile
+                        key={player.id}
+                        playerId={player.player_id}
+                        playerName={playerStatus.playerName}
+                        isHost={player.player_id === room.host_id}
+                        roomId={room.id}
+                        currentGameweek={room.current_gameweek}
+                        playerStatus={playerStatus.status}
+                      />
+                    );
+                  })
+                ) : (
+                  room.room_players.map((player) => (
+                    <div key={player.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-[#404040] rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium">
+                            {player.profiles.display_name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="text-white">{player.profiles.display_name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {player.player_id === room.host_id && (
+                          <Crown className="text-yellow-400" size={16} />
+                        )}
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          player.status === 'active' ? 'bg-green-500/20 text-green-400' :
+                          player.status === 'eliminated' ? 'bg-red-500/20 text-red-400' :
+                          'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {player.status}
                         </span>
                       </div>
-                      <span className="text-white">{player.profiles.display_name}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {player.id === room.host_id && (
-                        <Crown className="text-yellow-400" size={16} />
-                      )}
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        player.status === 'active' ? 'bg-green-500/20 text-green-400' :
-                        player.status === 'eliminated' ? 'bg-red-500/20 text-red-400' :
-                        'bg-yellow-500/20 text-yellow-400'
-                      }`}>
-                        {player.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
