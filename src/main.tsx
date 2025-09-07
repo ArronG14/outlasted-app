@@ -4,7 +4,8 @@ import App from './App.tsx';
 import './index.css';
 
 // Cache busting - log version info
-console.log('OUTLASTED App v2.0.0 - Cache Busting Enabled');
+const APP_VERSION = '2.0.1';
+console.log(`OUTLASTED App v${APP_VERSION} - Cache Busting Enabled`);
 console.log('Build timestamp:', new Date().toISOString());
 
 // Set up proper error handling
@@ -20,6 +21,9 @@ if ('caches' in window) {
     });
   });
 }
+
+// Store version in window for debugging
+(window as any).OUTLASTED_VERSION = APP_VERSION;
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

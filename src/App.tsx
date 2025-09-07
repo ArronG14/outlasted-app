@@ -20,7 +20,8 @@ function App() {
 
   // Cache busting effect
   useEffect(() => {
-    console.log('App component mounted - Cache busting v2.0.0');
+    const APP_VERSION = '2.0.1';
+    console.log(`App component mounted - Cache busting v${APP_VERSION}`);
     
     // Clear localStorage of any cached data
     const keysToRemove = [];
@@ -48,7 +49,7 @@ function App() {
       <div className="min-h-screen bg-[#171717] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00E5A0] mx-auto mb-4"></div>
-          <p className="text-white">Loading OUTLASTED v2.0.0...</p>
+          <p className="text-white">Loading OUTLASTED v2.0.1...</p>
         </div>
       </div>
     );
