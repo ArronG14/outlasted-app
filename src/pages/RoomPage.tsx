@@ -4,7 +4,11 @@ import { ArrowLeft, Users, DollarSign, Copy, Crown, Settings, CheckCircle } from
 import { Button } from '../components/ui/Button';
 import { GameweekFixtures } from '../components/rooms/GameweekFixtures';
 import { PickInterface } from '../components/rooms/PickInterface';
+import { DealSystem } from '../components/rooms/DealSystem';
+import { WinnerCelebration } from '../components/rooms/WinnerCelebration';
 import { RoomService } from '../services/roomService';
+import { GameStateService } from '../services/gameStateService';
+import { EliminationService } from '../services/eliminationService';
 import { useAuth } from '../hooks/useAuth';
 
 interface RoomDetails {
@@ -42,12 +46,22 @@ export function RoomPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
+  const [gameState, setGameState] = useState<any>(null);
+  const [showWinnerCelebration, setShowWinnerCelebration] = useState(false);
+  const [winner, setWinner] = useState<any>(null);
 
   useEffect(() => {
     if (id) {
       loadRoomDetails();
+      loadGameState();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (room && gameState) {
+      checkForWinner();
+    }
+  }, [room, gameState]);
 
   const loadRoomDetails = async () => {
     if (!id) return;
@@ -61,6 +75,52 @@ export function RoomPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadGameState = async () => {
+    if (!id) return;
+
+    try {
+      const state = await GameStateService.getGameState(id);
+      setGameState(state);
+    } catch (err) {
+      console.error('Error loading game state:', err);
+    }
+  };
+
+  const checkForWinner = () => {
+    if (!room || !gameState) return;
+
+    // Check if game is completed and there's only one active player
+    if (gameState.status === 'completed' && gameState.active_players === 1) {
+      const winnerPlayer = room.room_players.find(p => p.status === 'active');
+      if (winnerPlayer) {
+        setWinner({
+          name: winnerPlayer.profiles.display_name,
+          prize: room.buy_in * room.current_players,
+          totalPlayers: room.current_players,
+          gameweeksSurvived: room.current_gameweek
+        });
+        setShowWinnerCelebration(true);
+      }
+    }
+  };
+
+  const handleDealAccepted = () => {
+    // Handle deal acceptance - split winnings
+    console.log('Deal accepted - splitting winnings');
+    // This would trigger the deal completion logic
+  };
+
+  const handleRematch = () => {
+    // Reset room for rematch
+    console.log('Starting rematch');
+    setShowWinnerCelebration(false);
+    // This would reset the room state
+  };
+
+  const handleLeaveRoom = () => {
+    navigate('/dashboard');
   };
 
   const copyInviteLink = async () => {
@@ -151,6 +211,17 @@ export function RoomPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Deal System */}
+            {gameState && (
+              <DealSystem
+                roomId={room.id}
+                currentGameweek={room.current_gameweek}
+                activePlayers={gameState.active_players}
+                dealThreshold={room.deal_threshold}
+                onDealAccepted={handleDealAccepted}
+              />
+            )}
+
             {/* Pick Interface */}
             <PickInterface 
               roomId={room.id}
@@ -158,6 +229,7 @@ export function RoomPage() {
               onPickMade={() => {
                 // Refresh room data when a pick is made
                 loadRoomDetails();
+                loadGameState();
               }}
             />
 
@@ -353,6 +425,18 @@ export function RoomPage() {
           </div>
         </div>
       </div>
+
+      {/* Winner Celebration Modal */}
+      {showWinnerCelebration && winner && (
+        <WinnerCelebration
+          winnerName={winner.name}
+          prizeAmount={winner.prize}
+          totalPlayers={winner.totalPlayers}
+          gameweeksSurvived={winner.gameweeksSurvived}
+          onRematch={handleRematch}
+          onLeave={handleLeaveRoom}
+        />
+      )}
     </div>
   );
 }
