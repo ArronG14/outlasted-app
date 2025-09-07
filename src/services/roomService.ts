@@ -131,6 +131,8 @@ export class RoomService {
   }
 
   static async getRoomDetails(roomId: string) {
+    console.log('Getting room details for:', roomId);
+    
     // First get the room data
     const { data: roomData, error: roomError } = await supabase
       .from('rooms')
@@ -138,23 +140,35 @@ export class RoomService {
       .eq('id', roomId)
       .single();
 
-    if (roomError) throw roomError;
+    console.log('Room data:', roomData);
+    console.log('Room error:', roomError);
+
+    if (roomError) {
+      console.error('Room fetch failed:', roomError);
+      throw roomError;
+    }
 
     // Then get the host profile
-    const { data: hostProfile } = await supabase
+    const { data: hostProfile, error: hostError } = await supabase
       .from('profiles')
       .select('display_name')
       .eq('id', roomData.host_id)
       .single();
 
+    console.log('Host profile:', hostProfile);
+    console.log('Host error:', hostError);
+
     // Then get room players
-    const { data: players } = await supabase
+    const { data: players, error: playersError } = await supabase
       .from('room_players')
       .select(`
         *,
         profiles (display_name, avatar_url)
       `)
       .eq('room_id', roomId);
+
+    console.log('Players:', players);
+    console.log('Players error:', playersError);
 
     return {
       ...roomData,
