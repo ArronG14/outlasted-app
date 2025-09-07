@@ -46,15 +46,22 @@ export class RoomService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
+    // Convert buy_in to cents for the database function
+    const buyInCents = Math.round(roomData.buy_in * 100);
+
     const { data, error } = await supabase.rpc('create_room', {
       p_name: roomData.name,
-      p_buy_in: roomData.buy_in, // Fixed: now expects numeric, not cents
+      p_buy_in_cents: buyInCents, // Send as cents (integer)
       p_player_limit: roomData.max_players,
       p_is_public: roomData.is_public,
       p_code: roomData.custom_code || null,
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Room creation error:', error);
+      throw error;
+    }
+    
     return data;
   }
 
