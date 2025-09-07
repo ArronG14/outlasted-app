@@ -112,6 +112,13 @@ export function RoomPage() {
     }
   };
 
+  const getCurrentUserStatus = () => {
+    if (!user || !room) return 'active';
+    
+    const currentPlayer = room.room_players.find(p => p.player_id === user.id);
+    return currentPlayer?.status || 'active';
+  };
+
   const loadGameState = async () => {
     if (!id) return;
 
@@ -349,10 +356,11 @@ export function RoomPage() {
               <PickInterface
                 roomId={room.id}
                 currentGameweek={room.current_gameweek}
-                onPickUpdate={() => {
+                onPickMade={() => {
                   loadRoomDetails();
                   loadGameState();
                 }}
+                playerStatus={getCurrentUserStatus()}
               />
             ) : null}
 

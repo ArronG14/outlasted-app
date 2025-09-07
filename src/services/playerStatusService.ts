@@ -66,7 +66,7 @@ export class PlayerStatusService {
     let teamName: string | undefined;
 
     if (playerStatus === 'eliminated') {
-      // Player is eliminated - show their last pick or eliminated status
+      // Player is eliminated - always show eliminated status
       status = 'eliminated';
       displayText = 'Eliminated';
       if (hasPick && deadlinePassed) {

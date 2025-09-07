@@ -11,6 +11,7 @@ interface PickInterfaceProps {
   roomId: string;
   currentGameweek: number;
   onPickMade: () => void;
+  playerStatus?: 'active' | 'eliminated' | 'pending_pick';
 }
 
 interface UserPick {
@@ -30,7 +31,7 @@ interface Gameweek {
   finished: boolean;
 }
 
-export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInterfaceProps) {
+export function PickInterface({ roomId, currentGameweek, onPickMade, playerStatus }: PickInterfaceProps) {
   const [selectedTeam, setSelectedTeam] = useState<string>('');
   const [selectedGameweek, setSelectedGameweek] = useState<number>(currentGameweek);
   const [userPicks, setUserPicks] = useState<UserPick[]>([]);
@@ -161,8 +162,8 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
   };
 
   const isUserEliminated = () => {
-    // Check if user has any losing picks
-    return userPicks.some(pick => pick.result === 'lose');
+    // Check if user is eliminated in the room or has any losing picks
+    return playerStatus === 'eliminated' || userPicks.some(pick => pick.result === 'lose');
   };
 
   const getPickResult = (gameweek: number) => {

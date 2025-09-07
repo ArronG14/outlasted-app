@@ -6,6 +6,22 @@ export class PickService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
+    // Check if player is eliminated
+    const { data: playerData, error: playerError } = await supabase
+      .from('room_players')
+      .select('status')
+      .eq('room_id', roomId)
+      .eq('player_id', user.id)
+      .single();
+
+    if (playerError || !playerData) {
+      throw new Error('Player not found in room');
+    }
+
+    if (playerData.status === 'eliminated') {
+      throw new Error('You have been eliminated and cannot make picks');
+    }
+
     // Validate team name - check if it exists in the database
     const { data: validTeams } = await supabase
       .from('pl_teams')
