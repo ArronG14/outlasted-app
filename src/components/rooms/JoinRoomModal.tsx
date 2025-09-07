@@ -29,6 +29,8 @@ export function JoinRoomModal({ onClose, onSuccess }: JoinRoomModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [loadingRooms, setLoadingRooms] = useState(true);
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState<PublicRoom | null>(null);
 
   useEffect(() => {
     if (activeTab === 'public') {
@@ -56,6 +58,36 @@ export function JoinRoomModal({ onClose, onSuccess }: JoinRoomModalProps) {
       onSuccess(roomId);
       onClose();
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to join room';
+      
+      // If the error indicates password is required, show password prompt
+      if (errorMessage.includes('password') || errorMessage.includes('locked')) {
+        const room = publicRooms.find(r => r.id === roomId);
+        if (room) {
+          setSelectedRoom(room);
+          setShowPasswordPrompt(true);
+          setError('');
+          return;
+        }
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRoom) return;
+
+    try {
+      setLoading(true);
+      setError('');
+      await RoomService.joinRoomById(selectedRoom.id, password);
+      onSuccess(selectedRoom.id);
+      onClose();
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join room');
     } finally {
       setLoading(false);
@@ -80,6 +112,13 @@ export function JoinRoomModal({ onClose, onSuccess }: JoinRoomModalProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const closePasswordPrompt = () => {
+    setShowPasswordPrompt(false);
+    setSelectedRoom(null);
+    setPassword('');
+    setError('');
   };
 
   return (
@@ -227,6 +266,66 @@ export function JoinRoomModal({ onClose, onSuccess }: JoinRoomModalProps) {
           )}
         </div>
       </div>
+
+      {/* Password Prompt Modal */}
+      {showPasswordPrompt && selectedRoom && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-[#262626] rounded-xl w-full max-w-md border border-[#404040]">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-[#F8F8F6]">Room Password Required</h3>
+                <button
+                  onClick={closePasswordPrompt}
+                  className="text-[#737373] hover:text-[#F8F8F6] transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <p className="text-[#D4D4D4] mb-2">Room: <span className="text-[#F8F8F6] font-medium">{selectedRoom.name}</span></p>
+                <p className="text-[#737373] text-sm">This room is password protected. Please enter the password to join.</p>
+              </div>
+
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                <Input
+                  label="Room Password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter room password"
+                  className="bg-[#171717] border-[#404040] text-[#F8F8F6] placeholder-[#737373] focus:border-[#00E5A0]"
+                  required
+                />
+
+                {error && (
+                  <div className="text-sm text-[#DC2626] bg-[#DC2626]/10 p-3 rounded-lg">
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    onClick={closePasswordPrompt}
+                    variant="outline"
+                    className="flex-1 border-[#404040] text-[#F8F8F6] hover:bg-[#404040]"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 bg-[#00E5A0] text-black hover:bg-[#00E5A0]/90"
+                    disabled={loading}
+                  >
+                    {loading ? 'Joining...' : 'Join Room'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

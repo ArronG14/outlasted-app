@@ -1,5 +1,4 @@
 import { supabase } from '../lib/supabase';
-import { Room, RoomPlayer } from '../types/database';
 
 interface CreateRoomParams {
   name: string;
@@ -82,9 +81,36 @@ export class RoomService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { data, error } = await supabase.rpc('join_room_with_password', {
-      p_room_code: roomId,
-      p_password: password || null,
+    // Check if room requires password
+    const { data: room, error: roomError } = await supabase
+      .from('rooms')
+      .select('is_locked, invite_code')
+      .eq('id', roomId)
+      .single();
+
+    if (roomError || !room) {
+      throw new Error('Room not found');
+    }
+
+    // If room is locked and no password provided, use password function
+    if (room.is_locked && !password) {
+      throw new Error('This room requires a password');
+    }
+
+    // If room is locked and password provided, use password function
+    if (room.is_locked && password) {
+      const { data, error } = await supabase.rpc('join_room_with_password', {
+        p_room_code: room.invite_code,
+        p_password: password,
+      });
+
+      if (error) throw error;
+      return data;
+    }
+
+    // For public rooms without passwords, use the simple join_room function
+    const { data, error } = await supabase.rpc('join_room', {
+      p_room_id: roomId
     });
 
     if (error) throw error;
