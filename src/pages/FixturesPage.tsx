@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Clock } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { GameweekFixtures } from '../components/rooms/GameweekFixtures';
+import { ViewFixtures } from '../components/fixtures/ViewFixtures';
 import { FPLService } from '../services/fplService';
 import { Gameweek } from '../types/fpl';
 
@@ -191,7 +191,7 @@ export function FixturesPage() {
         </div>
 
         {/* Fixtures */}
-        <GameweekFixtures gameweek={currentGameweek} />
+        <ViewFixtures gameweek={currentGameweek} />
 
         {/* Gameweek List */}
         {availableGameweeks.length > 1 && (
