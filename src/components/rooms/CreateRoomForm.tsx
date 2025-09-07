@@ -107,11 +107,10 @@ export function CreateRoomForm({ onClose, onSuccess }: CreateRoomFormProps) {
               onChange={(e) => setName(e.target.value)}
               placeholder="Premier League Survival 2025"
               required
-              className="bg-[#171717] border-[#404040] text-[#F8F8F6] placeholder-[#737373] focus:border-[#00E5A0]"
             />
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-[#D4D4D4]">
+              <label className="block text-sm font-medium text-[#F8F8F6]">
                 Description (Optional)
               </label>
               <textarea
@@ -141,32 +140,27 @@ export function CreateRoomForm({ onClose, onSuccess }: CreateRoomFormProps) {
                 min="0"
                 step="0.01"
                 required
-                className="bg-[#171717] border-[#404040] text-[#F8F8F6] placeholder-[#737373] focus:border-[#00E5A0]"
               />
               
-              <Input
-                label="Max Players"
-                type="number"
-                value={maxPlayers}
-                onChange={(e) => setMaxPlayers(e.target.value)}
-                placeholder="20"
-                min="2"
-                required
-                className="bg-[#171717] border-[#404040] text-[#F8F8F6] placeholder-[#737373] focus:border-[#00E5A0]"
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-[#F8F8F6]">
+                  Max Players
+                </label>
+                <select
+                  value={maxPlayers}
+                  onChange={(e) => setMaxPlayers(e.target.value)}
+                  className="w-full px-4 py-3 border border-[#404040] rounded-lg bg-[#171717] text-[#F8F8F6] focus:outline-none focus:ring-2 focus:ring-[#00E5A0]/20 focus:border-[#00E5A0] transition-all duration-200"
+                >
+                  <option value="4">4 Players</option>
+                  <option value="6">6 Players</option>
+                  <option value="8">8 Players</option>
+                  <option value="10">10 Players</option>
+                  <option value="12">12 Players</option>
+                  <option value="16">16 Players</option>
+                  <option value="20">20 Players</option>
+                </select>
+              </div>
             </div>
-
-            {!isPublic && (
-              <Input
-                label="Custom Room Code (Optional)"
-                type="text"
-                value={customCode}
-                onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
-                placeholder="Leave empty for auto-generated code"
-                maxLength={8}
-                className="bg-[#171717] border-[#404040] text-[#F8F8F6] placeholder-[#737373] focus:border-[#00E5A0]"
-              />
-            )}
 
             <Input
               label="Deal Threshold"
@@ -176,20 +170,59 @@ export function CreateRoomForm({ onClose, onSuccess }: CreateRoomFormProps) {
               placeholder="2"
               min="2"
               required
-              className="bg-[#171717] border-[#404040] text-[#F8F8F6] placeholder-[#737373] focus:border-[#00E5A0]"
             />
+            <p className="text-sm text-[#737373]">
+              When this many players remain, a deal popup will appear for all active players to decide whether to draw or continue.
+            </p>
           </div>
 
-          {/* Privacy & Rules */}
+          {/* Rules */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-[#F8F8F6] flex items-center gap-2">
               <Lock size={20} />
-              Privacy & Rules
+              Game Rules
             </h3>
             
-            {/* Public/Private Toggle */}
+            {/* No Pick Policy */}
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-[#D4D4D4]">
+              <label className="block text-sm font-medium text-[#F8F8F6]">
+                What happens if a player doesn't pick a team?
+              </label>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setNoPickPolicy('eliminate')}
+                  className={`px-4 py-3 rounded-lg border transition-all ${
+                    noPickPolicy === 'eliminate'
+                      ? 'bg-[#EE6C4D]/10 border-[#EE6C4D] text-[#EE6C4D]'
+                      : 'bg-[#171717] border-[#404040] text-[#737373] hover:border-[#737373]'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="font-medium">Eliminate</div>
+                    <div className="text-xs opacity-75">Player is out</div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNoPickPolicy('random_pick')}
+                  className={`px-4 py-3 rounded-lg border transition-all ${
+                    noPickPolicy === 'random_pick'
+                      ? 'bg-[#EE6C4D]/10 border-[#EE6C4D] text-[#EE6C4D]'
+                      : 'bg-[#171717] border-[#404040] text-[#737373] hover:border-[#737373]'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="font-medium">Random Pick</div>
+                    <div className="text-xs opacity-75">System picks for them</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Privacy */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-[#F8F8F6]">
                 Room Type
               </label>
               <div className="flex gap-4">
@@ -216,68 +249,6 @@ export function CreateRoomForm({ onClose, onSuccess }: CreateRoomFormProps) {
                 >
                   <Lock size={20} />
                   Private Room
-                </button>
-              </div>
-            </div>
-
-            {/* Double Gameweek Rule */}
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-[#D4D4D4]">
-                Double Gameweek Rule
-              </label>
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setDgwRule('first_only')}
-                  className={`px-4 py-2 rounded-lg border text-sm transition-all ${
-                    dgwRule === 'first_only'
-                      ? 'bg-[#00E5A0]/10 border-[#00E5A0] text-[#00E5A0]'
-                      : 'bg-[#171717] border-[#404040] text-[#737373] hover:border-[#737373]'
-                  }`}
-                >
-                  First Only
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDgwRule('both_count')}
-                  className={`px-4 py-2 rounded-lg border text-sm transition-all ${
-                    dgwRule === 'both_count'
-                      ? 'bg-[#00E5A0]/10 border-[#00E5A0] text-[#00E5A0]'
-                      : 'bg-[#171717] border-[#404040] text-[#737373] hover:border-[#737373]'
-                  }`}
-                >
-                  Both Count
-                </button>
-              </div>
-            </div>
-
-            {/* No Pick Policy */}
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-[#D4D4D4]">
-                No Pick Policy
-              </label>
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setNoPickPolicy('eliminate')}
-                  className={`px-4 py-2 rounded-lg border text-sm transition-all ${
-                    noPickPolicy === 'eliminate'
-                      ? 'bg-[#EE6C4D]/10 border-[#EE6C4D] text-[#EE6C4D]'
-                      : 'bg-[#171717] border-[#404040] text-[#737373] hover:border-[#737373]'
-                  }`}
-                >
-                  Eliminate
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setNoPickPolicy('random_pick')}
-                  className={`px-4 py-2 rounded-lg border text-sm transition-all ${
-                    noPickPolicy === 'random_pick'
-                      ? 'bg-[#EE6C4D]/10 border-[#EE6C4D] text-[#EE6C4D]'
-                      : 'bg-[#171717] border-[#404040] text-[#737373] hover:border-[#737373]'
-                  }`}
-                >
-                  Random Pick
                 </button>
               </div>
             </div>
