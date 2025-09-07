@@ -178,31 +178,49 @@ export class RoomService {
       throw roomError;
     }
 
-    // Then get the host profile
-    const { data: hostProfile, error: hostError } = await supabase
-      .from('profiles')
-      .select('display_name')
-      .eq('id', roomData.host_id)
-      .single();
+    // Try to get the host profile (optional - might not exist)
+    let hostProfile = null;
+    try {
+      const { data: profileData, error: hostError } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', roomData.host_id)
+        .single();
 
-    console.log('Host profile:', hostProfile);
-    console.log('Host error:', hostError);
+      if (!hostError && profileData) {
+        hostProfile = profileData;
+        console.log('Host profile found:', hostProfile);
+      } else {
+        console.log('Host profile not found, using fallback');
+      }
+    } catch (err) {
+      console.log('Host profile fetch failed, using fallback:', err);
+    }
 
-    // Then get room players
-    const { data: players, error: playersError } = await supabase
-      .from('room_players')
-      .select(`
-        *,
-        profiles (display_name, avatar_url)
-      `)
-      .eq('room_id', roomId);
+    // Get room players (also handle missing profiles gracefully)
+    let players = [];
+    try {
+      const { data: playersData, error: playersError } = await supabase
+        .from('room_players')
+        .select(`
+          *,
+          profiles (display_name, avatar_url)
+        `)
+        .eq('room_id', roomId);
 
-    console.log('Players:', players);
-    console.log('Players error:', playersError);
+      if (!playersError && playersData) {
+        players = playersData;
+        console.log('Players loaded:', players);
+      } else {
+        console.log('Players fetch failed:', playersError);
+      }
+    } catch (err) {
+      console.log('Players fetch failed:', err);
+    }
 
     return {
       ...roomData,
-      profiles: hostProfile,
+      profiles: hostProfile || { display_name: 'Host' },
       room_players: players || []
     };
   }
