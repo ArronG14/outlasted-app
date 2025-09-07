@@ -3,6 +3,7 @@ import { Clock, Users, Trophy, Plus, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { NextDeadline } from '../components/dashboard/NextDeadline';
 import { UpcomingFixtures } from '../components/dashboard/UpcomingFixtures';
+import { ActiveRooms } from '../components/dashboard/ActiveRooms';
 import { CreateRoomForm } from '../components/rooms/CreateRoomForm';
 import { JoinRoomModal } from '../components/rooms/JoinRoomModal';
 import { useAuth } from '../hooks/useAuth';
@@ -117,38 +118,8 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Room Sections */}
-        <div className="space-y-8">
-          {/* Ongoing Games */}
-          <section>
-            <h2 className="text-2xl font-bold mb-6 text-[#F8F8F6]">Ongoing Games</h2>
-            <div className="bg-[#262626] rounded-xl p-8 text-center">
-              <Clock className="mx-auto mb-4 text-[#737373]" size={48} />
-              <p className="text-[#737373] text-lg">No ongoing games</p>
-              <p className="text-[#737373] mt-2">Join or create a room to start playing</p>
-            </div>
-          </section>
-
-          {/* Upcoming Games */}
-          <section>
-            <h2 className="text-2xl font-bold mb-6 text-[#F8F8F6]">Upcoming Games</h2>
-            <div className="bg-[#262626] rounded-xl p-8 text-center">
-              <Users className="mx-auto mb-4 text-[#737373]" size={48} />
-              <p className="text-[#737373] text-lg">No upcoming games</p>
-              <p className="text-[#737373] mt-2">Rooms you've joined will appear here</p>
-            </div>
-          </section>
-
-          {/* Previous Games */}
-          <section>
-            <h2 className="text-2xl font-bold mb-6 text-[#F8F8F6]">Previous Games</h2>
-            <div className="bg-[#262626] rounded-xl p-8 text-center">
-              <Trophy className="mx-auto mb-4 text-[#737373]" size={48} />
-              <p className="text-[#737373] text-lg">No previous games</p>
-              <p className="text-[#737373] mt-2">Your game history will appear here</p>
-            </div>
-          </section>
-        </div>
+        {/* Active Rooms */}
+        <ActiveRooms />
       </div>
 
       {/* Modals */}
