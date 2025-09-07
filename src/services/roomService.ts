@@ -11,6 +11,7 @@ interface CreateRoomParams {
   no_pick_policy?: 'eliminate' | 'random_pick';
   deal_threshold?: number;
   custom_code?: string;
+  password?: string;
 }
 
 interface CreateRoomResponse {
@@ -60,6 +61,7 @@ export class RoomService {
         p_player_limit: roomData.max_players,
         p_is_public: roomData.is_public,
         p_code: roomData.custom_code || null,
+        p_password: roomData.password || null,
       });
 
       console.log('RPC response:', { data, error });
@@ -76,24 +78,26 @@ export class RoomService {
     }
   }
 
-  static async joinRoomById(roomId: string): Promise<JoinRoomResponse> {
+  static async joinRoomById(roomId: string, password?: string): Promise<JoinRoomResponse> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { data, error } = await supabase.rpc('join_room', {
-      p_room_id: roomId,
+    const { data, error } = await supabase.rpc('join_room_with_password', {
+      p_room_code: roomId,
+      p_password: password || null,
     });
 
     if (error) throw error;
     return data;
   }
 
-  static async joinRoomByCode(code: string): Promise<JoinRoomResponse> {
+  static async joinRoomByCode(code: string, password?: string): Promise<JoinRoomResponse> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { data, error } = await supabase.rpc('join_room', {
-      p_code: code,
+    const { data, error } = await supabase.rpc('join_room_with_password', {
+      p_room_code: code,
+      p_password: password || null,
     });
 
     if (error) throw error;

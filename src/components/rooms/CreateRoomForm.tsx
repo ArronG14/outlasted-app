@@ -19,6 +19,7 @@ export function CreateRoomForm({ onClose, onSuccess }: CreateRoomFormProps) {
   const [dgwRule, setDgwRule] = useState<'first_only' | 'both_count'>('first_only');
   const [noPickPolicy, setNoPickPolicy] = useState<'eliminate' | 'random_pick'>('eliminate');
   const [dealThreshold, setDealThreshold] = useState('2');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -66,6 +67,7 @@ export function CreateRoomForm({ onClose, onSuccess }: CreateRoomFormProps) {
         max_players: parseInt(maxPlayers),
         is_public: isPublic,
         custom_code: customCode.trim() || undefined,
+        password: password.trim() || undefined,
         dgw_rule: dgwRule,
         no_pick_policy: noPickPolicy,
         deal_threshold: parseInt(dealThreshold),
@@ -125,6 +127,17 @@ export function CreateRoomForm({ onClose, onSuccess }: CreateRoomFormProps) {
                 className="w-full px-4 py-3 border border-[#404040] rounded-lg bg-[#171717] text-[#F8F8F6] placeholder-[#737373] focus:outline-none focus:ring-2 focus:ring-[#00E5A0]/20 focus:border-[#00E5A0] transition-all duration-200 resize-none"
               />
             </div>
+
+            <Input
+              label="Room Password (Optional)"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Leave blank for no password"
+            />
+            <p className="text-sm text-[#737373]">
+              Adding a password will lock the room. Players will need the password to join.
+            </p>
           </div>
 
           {/* Game Settings */}

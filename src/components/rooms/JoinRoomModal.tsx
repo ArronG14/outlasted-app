@@ -25,6 +25,7 @@ export function JoinRoomModal({ onClose, onSuccess }: JoinRoomModalProps) {
   const [activeTab, setActiveTab] = useState<'public' | 'private'>('public');
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
   const [roomCode, setRoomCode] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [loadingRooms, setLoadingRooms] = useState(true);
@@ -47,11 +48,11 @@ export function JoinRoomModal({ onClose, onSuccess }: JoinRoomModalProps) {
     }
   };
 
-  const handleJoinPublicRoom = async (roomId: string) => {
+  const handleJoinPublicRoom = async (roomId: string, roomPassword?: string) => {
     try {
       setLoading(true);
       setError('');
-      await RoomService.joinRoomById(roomId);
+      await RoomService.joinRoomById(roomId, roomPassword);
       onSuccess(roomId);
       onClose();
     } catch (err) {
@@ -71,7 +72,7 @@ export function JoinRoomModal({ onClose, onSuccess }: JoinRoomModalProps) {
     try {
       setLoading(true);
       setError('');
-      const result = await RoomService.joinRoomByCode(roomCode.trim());
+      const result = await RoomService.joinRoomByCode(roomCode.trim(), password.trim() || undefined);
       onSuccess(result.id);
       onClose();
     } catch (err) {
@@ -196,6 +197,15 @@ export function JoinRoomModal({ onClose, onSuccess }: JoinRoomModalProps) {
                   placeholder="Enter room code (e.g. ABC123)"
                   className="bg-[#171717] border-[#404040] text-[#F8F8F6] placeholder-[#737373] focus:border-[#00E5A0]"
                   required
+                />
+
+                <Input
+                  label="Room Password (if required)"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password if room is locked"
+                  className="bg-[#171717] border-[#404040] text-[#F8F8F6] placeholder-[#737373] focus:border-[#00E5A0]"
                 />
 
                 {error && (
