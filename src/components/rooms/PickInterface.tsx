@@ -443,13 +443,13 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
                       Picked
                     </span>
                   )}
-                  {!result && status === 'awaiting' && (
+                  {!result && status === 'awaiting' && !deadlinePassed && (
                     <span className="flex items-center gap-2 text-[#C9B037] text-sm font-medium">
                       <Clock size={16} />
                       Awaiting Pick
                     </span>
                   )}
-                  {deadlinePassed && !result && (
+                  {deadlinePassed && !result && status === 'awaiting' && (
                     <span className="flex items-center gap-2 text-white/50 text-sm font-medium">
                       <AlertCircle size={16} />
                       Locked
