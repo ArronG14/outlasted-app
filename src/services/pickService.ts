@@ -24,7 +24,7 @@ export class PickService {
     }
 
     // Check if picks are locked for this gameweek
-    const lockTime = this.getPickLockTime(gameweek);
+    const lockTime = await this.getPickLockTime(gameweek);
     if (new Date() > lockTime) {
       throw new Error('Picks are locked for this gameweek');
     }
@@ -77,14 +77,21 @@ export class PickService {
     return data;
   }
 
-  static getPickLockTime(gameweek: number): Date {
-    // Mock implementation - in production, this would calculate based on fixture times
-    // For now, assume gameweek starts on Saturday 3 PM and locks 90 minutes before
-    const gameweekStart = new Date();
-    gameweekStart.setDate(gameweekStart.getDate() + (6 - gameweekStart.getDay())); // Next Saturday
-    gameweekStart.setHours(15, 0, 0, 0); // 3 PM
-    
-    const lockTime = new Date(gameweekStart.getTime() - 90 * 60 * 1000); // 90 minutes before
+  static async getPickLockTime(gameweek: number): Promise<Date> {
+    // Get the actual deadline from FPL API
+    const { data, error } = await supabase
+      .from('gameweeks')
+      .select('deadline_utc')
+      .eq('gw', gameweek)
+      .single();
+
+    if (error || !data) {
+      throw new Error(`Could not find deadline for gameweek ${gameweek}`);
+    }
+
+    const deadline = new Date(data.deadline_utc);
+    // Lock picks 90 minutes before the deadline
+    const lockTime = new Date(deadline.getTime() - 90 * 60 * 1000);
     return lockTime;
   }
 

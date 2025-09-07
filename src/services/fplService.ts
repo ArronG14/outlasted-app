@@ -21,6 +21,23 @@ export class FPLService {
   }
 
   /**
+   * Get all gameweeks (for pick interface)
+   */
+  static async getGameweeks(): Promise<Gameweek[]> {
+    const { data, error } = await supabase
+      .from('gameweeks')
+      .select('*')
+      .order('gw', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching gameweeks:', error);
+      throw new Error('Failed to fetch gameweeks');
+    }
+
+    return data || [];
+  }
+
+  /**
    * Get fixtures for a specific gameweek with team information
    */
   static async listFixtures(gw: number): Promise<Fixture[]> {

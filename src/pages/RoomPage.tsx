@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, DollarSign, Copy, Crown, Settings, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { GameweekFixtures } from '../components/rooms/GameweekFixtures';
+import { PickInterface } from '../components/rooms/PickInterface';
 import { RoomService } from '../services/roomService';
 import { useAuth } from '../hooks/useAuth';
 
@@ -150,6 +151,16 @@ export function RoomPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Pick Interface */}
+            <PickInterface 
+              roomId={room.id}
+              currentGameweek={room.current_gameweek}
+              onPickMade={() => {
+                // Refresh room data when a pick is made
+                loadRoomDetails();
+              }}
+            />
+
             {/* Current Gameweek Fixtures */}
             {room.status === 'active' && (
               <GameweekFixtures
