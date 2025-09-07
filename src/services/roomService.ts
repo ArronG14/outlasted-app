@@ -131,12 +131,29 @@ export class RoomService {
   }
 
   static async getPublicRooms(): Promise<PublicRoom[]> {
-    const { data, error } = await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Get all public rooms
+    const { data: allRooms, error: roomsError } = await supabase
       .from('public_rooms_view')
       .select('*');
 
-    if (error) throw error;
-    return data || [];
+    if (roomsError) throw roomsError;
+
+    // Get rooms the user is already in
+    const { data: userRooms, error: userRoomsError } = await supabase
+      .from('room_players')
+      .select('room_id')
+      .eq('player_id', user.id);
+
+    if (userRoomsError) throw userRoomsError;
+
+    // Filter out rooms the user is already in
+    const userRoomIds = userRooms?.map(ur => ur.room_id) || [];
+    const filteredRooms = allRooms?.filter(room => !userRoomIds.includes(room.id)) || [];
+
+    return filteredRooms;
   }
 
   static async getUserRooms(status?: 'waiting' | 'active' | 'completed') {
@@ -209,19 +226,24 @@ export class RoomService {
         .eq('room_id', roomId);
 
       if (!playersError && playersData) {
+        console.log('Raw players data from database:', playersData);
         // Clean up players data - only use fallback if profile is truly missing
         players = playersData.map(player => {
+          console.log('Processing player:', player);
+          console.log('Player profiles:', player.profiles);
           // If profiles is null or undefined, use fallback
           if (!player.profiles) {
+            console.log('Using fallback for player:', player.id);
             return {
               ...player,
               profiles: { display_name: 'Player', avatar_url: null }
             };
           }
           // Otherwise, keep the real profile data
+          console.log('Using real profile data for player:', player.id, player.profiles);
           return player;
         });
-        console.log('Players loaded:', players);
+        console.log('Final processed players:', players);
       } else {
         console.log('Players fetch failed:', playersError);
       }
