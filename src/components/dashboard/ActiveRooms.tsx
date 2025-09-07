@@ -14,6 +14,8 @@ interface UserRoom {
   host_id: string;
   created_at: string;
   current_gameweek: number;
+  current_round: number;
+  round_1_deadline_passed: boolean;
 }
 
 export function ActiveRooms() {
@@ -31,14 +33,17 @@ export function ActiveRooms() {
       setLoading(true);
       const userRooms = await RoomService.getUserRooms();
       
-      // Separate rooms by status
+      // Separate rooms by round status
       const ongoing = userRooms.filter(room => 
         room.status === 'active' || 
-        (room.status === 'waiting' && room.current_gameweek > 1)
+        room.round_1_deadline_passed ||
+        room.current_round > 1
       );
       
       const upcoming = userRooms.filter(room => 
-        room.status === 'waiting' && room.current_gameweek === 1
+        room.status === 'waiting' && 
+        room.current_round === 1 && 
+        !room.round_1_deadline_passed
       );
       
       setOngoingRooms(ongoing);
@@ -76,8 +81,9 @@ export function ActiveRooms() {
               room.status === 'active' ? 'bg-[#00E5A0]/20 text-[#00E5A0]' :
               'bg-[#737373]/20 text-[#737373]'
             }`}>
-              {room.status === 'waiting' && room.current_gameweek === 1 ? 'Round 1 Picks' :
-               room.status === 'waiting' ? `Round ${room.current_gameweek} Picks` :
+              {room.status === 'waiting' && !room.round_1_deadline_passed ? 'Round 1 Picks' :
+               room.status === 'waiting' ? `Round ${room.current_round} Picks` :
+               room.status === 'active' ? `Round ${room.current_round} Active` :
                room.status.toUpperCase()}
             </span>
           </div>

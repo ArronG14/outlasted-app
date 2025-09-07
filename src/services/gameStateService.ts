@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 
 export interface GameState {
   current_gameweek: number;
+  current_round: number;
   status: 'waiting' | 'active' | 'completed';
   round_1_deadline_passed: boolean;
   last_game_finished: boolean;
@@ -15,6 +16,7 @@ export class GameStateService {
       .from('rooms')
       .select(`
         current_gameweek,
+        current_round,
         status,
         round_1_deadline_passed,
         current_players,
@@ -35,6 +37,7 @@ export class GameStateService {
 
     return {
       current_gameweek: room.current_gameweek,
+      current_round: room.current_round,
       status: room.status,
       round_1_deadline_passed: room.round_1_deadline_passed,
       last_game_finished: lastGameFinished,
@@ -76,45 +79,20 @@ export class GameStateService {
   }
 
   static async advanceToNextGameweek(roomId: string): Promise<void> {
-    const { data: room } = await supabase
-      .from('rooms')
-      .select('current_gameweek')
-      .eq('id', roomId)
-      .single();
+    // Use the database function for proper round tracking
+    const { data, error } = await supabase.rpc('advance_to_next_round', {
+      p_room_id: roomId
+    });
 
-    if (!room) return;
-
-    const { data: nextGameweek } = await supabase
-      .from('gameweeks')
-      .select('gw')
-      .gt('gw', room.current_gameweek)
-      .eq('is_finished', false)
-      .order('gw', { ascending: true })
-      .limit(1);
-
-    if (nextGameweek && nextGameweek.length > 0) {
-      await supabase
-        .from('rooms')
-        .update({ 
-          current_gameweek: nextGameweek[0].gw,
-          status: 'active'
-        })
-        .eq('id', roomId);
-    } else {
-      await supabase
-        .from('rooms')
-        .update({ status: 'completed' })
-        .eq('id', roomId);
-    }
+    if (error) throw error;
   }
 
   static async markRound1DeadlinePassed(roomId: string): Promise<void> {
-    await supabase
-      .from('rooms')
-      .update({ 
-        round_1_deadline_passed: true,
-        status: 'active'
-      })
-      .eq('id', roomId);
+    // Use the database function for proper round tracking
+    const { data, error } = await supabase.rpc('start_round_1', {
+      p_room_id: roomId
+    });
+
+    if (error) throw error;
   }
 }
