@@ -8,6 +8,7 @@ import { DealSystem } from '../components/rooms/DealSystem';
 import { WinnerCelebration } from '../components/rooms/WinnerCelebration';
 import { LiveScores } from '../components/rooms/LiveScores';
 import { RematchSystem } from '../components/rooms/RematchSystem';
+import { RoomDebug } from '../components/debug/RoomDebug';
 import { RoomService } from '../services/roomService';
 import { GameStateService } from '../services/gameStateService';
 import { EliminationService } from '../services/eliminationService';
@@ -54,9 +55,13 @@ export function RoomPage() {
   const [winner, setWinner] = useState<any>(null);
 
   useEffect(() => {
+    console.log('RoomPage mounted with ID:', id);
     if (id) {
       loadRoomDetails();
       loadGameState();
+    } else {
+      setError('No room ID provided');
+      setLoading(false);
     }
   }, [id]);
 
@@ -70,10 +75,14 @@ export function RoomPage() {
     if (!id) return;
 
     try {
+      console.log('Loading room details for ID:', id);
       setLoading(true);
+      setError('');
       const roomData = await RoomService.getRoomDetails(id);
+      console.log('Room data loaded:', roomData);
       setRoom(roomData);
     } catch (err) {
+      console.error('Error loading room details:', err);
       setError(err instanceof Error ? err.message : 'Failed to load room');
     } finally {
       setLoading(false);
@@ -84,10 +93,13 @@ export function RoomPage() {
     if (!id) return;
 
     try {
+      console.log('Loading game state for ID:', id);
       const state = await GameStateService.getGameState(id);
+      console.log('Game state loaded:', state);
       setGameState(state);
     } catch (err) {
       console.error('Error loading game state:', err);
+      // Don't set error for game state, it's not critical
     }
   };
 
@@ -98,69 +110,91 @@ export function RoomPage() {
     if (gameState.status === 'completed' && gameState.active_players === 1) {
       const winnerPlayer = room.room_players.find(p => p.status === 'active');
       if (winnerPlayer) {
-        setWinner({
-          name: winnerPlayer.profiles.display_name,
-          prize: room.buy_in * room.current_players,
-          totalPlayers: room.current_players,
-          gameweeksSurvived: room.current_gameweek
-        });
+        setWinner(winnerPlayer);
         setShowWinnerCelebration(true);
       }
     }
   };
 
   const handleDealAccepted = () => {
-    // Handle deal acceptance - split winnings
-    console.log('Deal accepted - splitting winnings');
-    // This would trigger the deal completion logic
+    // Handle deal acceptance
+    console.log('Deal accepted');
   };
 
   const handleRematch = () => {
-    // Reset room for rematch
-    console.log('Starting rematch');
+    // Handle rematch
+    console.log('Rematch initiated');
     setShowWinnerCelebration(false);
-    // This would reset the room state
+    loadRoomDetails();
+    loadGameState();
   };
 
   const handleLeaveRoom = () => {
+    // Handle leaving room
+    console.log('Leaving room');
     navigate('/dashboard');
   };
 
-  const copyInviteLink = async () => {
-    if (!room) return;
-
-    const inviteLink = `${window.location.origin}/invite/${room.invite_code}`;
-    
+  const copyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(inviteLink);
+      await navigator.clipboard.writeText(text);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
-      console.error('Failed to copy invite link:', err);
+      console.error('Failed to copy:', err);
     }
   };
 
-  const isHost = user?.id === room?.host_id;
-
+  // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#171717] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00E5A0]"></div>
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00E5A0] mx-auto mb-4"></div>
+          <p className="text-white text-lg">Loading room...</p>
+          <p className="text-white/60 text-sm mt-2">Room ID: {id}</p>
+        </div>
       </div>
     );
   }
 
-  if (error || !room) {
+  // Show error state
+  if (error) {
     return (
-      <div className="min-h-screen bg-[#171717] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-[#DC2626] text-lg mb-4">{error || 'Room not found'}</p>
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="bg-red-500/20 border border-red-500 rounded-xl p-6 mb-6">
+            <h2 className="text-xl font-semibold text-red-400 mb-2">Room Not Found</h2>
+            <p className="text-red-300 mb-4">{error}</p>
+            <p className="text-white/60 text-sm">Room ID: {id}</p>
+          </div>
           <Button
             onClick={() => navigate('/dashboard')}
-            variant="outline"
-            className="border-[#262626] text-[#D4D4D4] hover:bg-[#262626]"
+            className="bg-[#00E5A0] text-black hover:bg-[#00E5A0]/90"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft className="mr-2" size={20} />
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show room not found if no room data
+  if (!room) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="bg-yellow-500/20 border border-yellow-500 rounded-xl p-6 mb-6">
+            <h2 className="text-xl font-semibold text-yellow-400 mb-2">Room Not Found</h2>
+            <p className="text-yellow-300 mb-4">The room you're looking for doesn't exist or you don't have access to it.</p>
+            <p className="text-white/60 text-sm">Room ID: {id}</p>
+          </div>
+          <Button
+            onClick={() => navigate('/dashboard')}
+            className="bg-[#00E5A0] text-black hover:bg-[#00E5A0]/90"
+          >
+            <ArrowLeft className="mr-2" size={20} />
             Back to Dashboard
           </Button>
         </div>
@@ -169,72 +203,127 @@ export function RoomPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#171717] text-[#F8F8F6]">
+    <div className="min-h-screen bg-[#0A0A0A] text-white">
       {/* Header */}
-      <header className="border-b border-[#262626] bg-[#171717]/95 backdrop-blur-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+      <div className="bg-[#171717] border-b border-[#404040]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
               <Button
-                variant="outline"
-                size="sm"
                 onClick={() => navigate('/dashboard')}
-                className="border-[#262626] text-[#D4D4D4] hover:bg-[#262626]"
+                variant="outline"
+                className="border-[#404040] text-white hover:bg-[#404040] mr-4"
               >
-                <ArrowLeft size={16} />
-                Back
+                <ArrowLeft size={20} />
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-[#F8F8F6]">{room.name}</h1>
-                <div className="flex items-center gap-4 text-sm text-[#737373]">
-                  <span>Code: {room.invite_code}</span>
-                  <span>ID: {room.id.slice(0, 8)}...</span>
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    room.status === 'waiting' ? 'bg-[#C9B037]/20 text-[#C9B037]' :
-                    room.status === 'active' ? 'bg-[#00E5A0]/20 text-[#00E5A0]' :
-                    'bg-[#737373]/20 text-[#737373]'
+                <h1 className="text-xl font-semibold">{room.name}</h1>
+                <p className="text-sm text-[#737373]">Room Code: {room.invite_code}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={() => copyToClipboard(`${window.location.origin}/rooms/${room.id}`)}
+                variant="outline"
+                className="border-[#404040] text-white hover:bg-[#404040]"
+              >
+                <Copy size={16} className="mr-2" />
+                {copySuccess ? 'Copied!' : 'Share'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Debug Component - Remove this after fixing */}
+        <RoomDebug roomId={room.id} />
+        
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column - Room Info */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Room Status */}
+            <div className="bg-[#262626] rounded-xl p-6">
+              <h2 className="text-lg font-semibold mb-4">Room Status</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-[#D4D4D4]">Status:</span>
+                  <span className={`font-medium ${
+                    room.status === 'waiting' ? 'text-yellow-400' :
+                    room.status === 'active' ? 'text-green-400' :
+                    'text-blue-400'
                   }`}>
-                    {room.status.toUpperCase()}
+                    {room.status.charAt(0).toUpperCase() + room.status.slice(1)}
                   </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#D4D4D4]">Current Gameweek:</span>
+                  <span className="text-white font-medium">GW {room.current_gameweek}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#D4D4D4]">Players:</span>
+                  <span className="text-white font-medium">{room.current_players}/{room.max_players}</span>
                 </div>
               </div>
             </div>
-            
-            {isHost && (
-              <div className="flex items-center gap-2">
-                <Crown className="text-[#C9B037]" size={20} />
-                <span className="text-[#C9B037] font-medium">Host</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
 
-      <div className="container mx-auto px-6 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Content */}
+            {/* Players List */}
+            <div className="bg-[#262626] rounded-xl p-6">
+              <h2 className="text-lg font-semibold mb-4">Players</h2>
+              <div className="space-y-3">
+                {room.room_players.map((player) => (
+                  <div key={player.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-[#404040] rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium">
+                          {player.profiles.display_name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className="text-white">{player.profiles.display_name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {player.id === room.host_id && (
+                        <Crown className="text-yellow-400" size={16} />
+                      )}
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        player.status === 'active' ? 'bg-green-500/20 text-green-400' :
+                        player.status === 'eliminated' ? 'bg-red-500/20 text-red-400' :
+                        'bg-yellow-500/20 text-yellow-400'
+                      }`}>
+                        {player.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - Game Content */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Pick Interface */}
+            {room.status === 'waiting' || room.status === 'active' ? (
+              <PickInterface
+                roomId={room.id}
+                currentGameweek={room.current_gameweek}
+                onPickUpdate={() => {
+                  loadRoomDetails();
+                  loadGameState();
+                }}
+              />
+            ) : null}
+
             {/* Deal System */}
-            {gameState && (
+            {room.status === 'active' && gameState && (
               <DealSystem
                 roomId={room.id}
                 currentGameweek={room.current_gameweek}
                 activePlayers={gameState.active_players}
-                dealThreshold={room.deal_threshold}
+                dealThreshold={room.deal_threshold || 2}
                 onDealAccepted={handleDealAccepted}
               />
             )}
-
-            {/* Pick Interface */}
-            <PickInterface 
-              roomId={room.id}
-              currentGameweek={room.current_gameweek}
-              onPickMade={() => {
-                // Refresh room data when a pick is made
-                loadRoomDetails();
-                loadGameState();
-              }}
-            />
 
             {/* Live Scores */}
             {room.status === 'active' && (
@@ -274,177 +363,21 @@ export function RoomPage() {
             <div className="bg-[#262626] rounded-xl p-6">
               <h2 className="text-xl font-semibold mb-4">Room Information</h2>
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3">
-                  <Users className="text-[#3D5A80]" size={20} />
-                  <div>
-                    <p className="text-[#737373] text-sm">Players</p>
-                    <p className="text-[#F8F8F6] font-medium">
-                      {room.current_players}/{room.max_players}
-                    </p>
-                  </div>
+                <div>
+                  <h3 className="text-sm font-medium text-[#D4D4D4] mb-2">Buy-in</h3>
+                  <p className="text-lg font-semibold">£{room.buy_in}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <DollarSign className="text-[#00E5A0]" size={20} />
-                  <div>
-                    <p className="text-[#737373] text-sm">Buy-in</p>
-                    <p className="text-[#F8F8F6] font-medium">£{room.buy_in}</p>
-                  </div>
+                <div>
+                  <h3 className="text-sm font-medium text-[#D4D4D4] mb-2">Prize Pot</h3>
+                  <p className="text-lg font-semibold">£{room.buy_in * room.current_players}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Settings className="text-[#EE6C4D]" size={20} />
-                  <div>
-                    <p className="text-[#737373] text-sm">Visibility</p>
-                    <p className="text-[#F8F8F6] font-medium">
-                      {room.is_public ? 'Public' : 'Private'}
-                    </p>
-                  </div>
+                <div>
+                  <h3 className="text-sm font-medium text-[#D4D4D4] mb-2">Host</h3>
+                  <p className="text-white">{room.profiles.display_name}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Crown className="text-[#C9B037]" size={20} />
-                  <div>
-                    <p className="text-[#737373] text-sm">Host</p>
-                    <p className="text-[#F8F8F6] font-medium">
-                      {room.profiles.display_name}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              {room.description && (
-                <div className="mt-4 pt-4 border-t border-[#404040]">
-                  <p className="text-[#D4D4D4]">{room.description}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Players List */}
-            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-white">Players</h2>
-                <div className="text-sm text-white/70">
-                  <span className="text-[#00E5A0] font-semibold">
-                    {room.room_players.filter(p => p.status === 'active').length}
-                  </span> active / {room.current_players} total
-                </div>
-              </div>
-              <div className="space-y-3">
-                {room.room_players.map((player) => (
-                  <div
-                    key={player.id}
-                    className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-white">
-                          {player.profiles.display_name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-white font-medium">
-                          {player.profiles.display_name}
-                          {player.profiles.display_name === room.profiles.display_name && (
-                            <Crown className="inline ml-2 text-[#C9B037]" size={16} />
-                          )}
-                        </p>
-                        <p className="text-white/60 text-sm">
-                          Joined {new Date(player.joined_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {/* Show current gameweek pick status */}
-                      <span className="text-white/60 text-xs">
-                        {player.status === 'active' ? 'Active' : 'Eliminated'}
-                      </span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        player.status === 'active' ? 'bg-[#00E5A0]/20 text-[#00E5A0]' :
-                        player.status === 'eliminated' ? 'bg-red-500/20 text-red-400' :
-                        'bg-[#C9B037]/20 text-[#C9B037]'
-                      }`}>
-                        {player.status.toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Host Panel */}
-            {isHost && (
-              <div className="bg-[#262626] rounded-xl p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Crown className="text-[#C9B037]" size={20} />
-                  Host Panel
-                </h3>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm text-[#737373] mb-2">
-                      Invite Link
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={`${window.location.origin}/invite/${room.invite_code}`}
-                        readOnly
-                        className="flex-1 px-3 py-2 bg-[#171717] border border-[#404040] rounded text-sm text-[#D4D4D4]"
-                      />
-                      <Button
-                        onClick={copyInviteLink}
-                        size="sm"
-                        className={`${
-                          copySuccess 
-                            ? 'bg-[#00E5A0] text-black' 
-                            : 'bg-[#3D5A80] text-white hover:bg-[#3D5A80]/90'
-                        }`}
-                      >
-                        {copySuccess ? <CheckCircle size={16} /> : <Copy size={16} />}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-[#737373]">Room Code</p>
-                      <p className="text-[#F8F8F6] font-mono">{room.invite_code}</p>
-                    </div>
-                    <div>
-                      <p className="text-[#737373]">Room ID</p>
-                      <p className="text-[#F8F8F6] font-mono">{room.id.slice(0, 8)}...</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Game Status */}
-            <div className="bg-[#262626] rounded-xl p-6">
-              <h3 className="text-lg font-semibold mb-4">Game Status</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-[#737373]">Status</span>
-                  <span className={`font-medium ${
-                    room.status === 'waiting' ? 'text-[#C9B037]' :
-                    room.status === 'active' ? 'text-[#00E5A0]' :
-                    'text-[#737373]'
-                  }`}>
-                    {room.status === 'waiting' ? 'Waiting for Players' :
-                     room.status === 'active' ? 'Game Active' :
-                     'Completed'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#737373]">Current Gameweek</span>
-                  <span className="text-[#F8F8F6] font-medium">{room.current_gameweek}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#737373]">Prize Pool</span>
-                  <span className="text-[#00E5A0] font-medium">
-                    £{(room.buy_in * room.current_players).toFixed(2)}
-                  </span>
+                <div>
+                  <h3 className="text-sm font-medium text-[#D4D4D4] mb-2">Created</h3>
+                  <p className="text-white">{new Date(room.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
             </div>
@@ -455,10 +388,8 @@ export function RoomPage() {
       {/* Winner Celebration Modal */}
       {showWinnerCelebration && winner && (
         <WinnerCelebration
-          winnerName={winner.name}
-          prizeAmount={winner.prize}
-          totalPlayers={winner.totalPlayers}
-          gameweeksSurvived={winner.gameweeksSurvived}
+          winner={winner}
+          prizeAmount={room.buy_in * room.current_players}
           onRematch={handleRematch}
           onLeave={handleLeaveRoom}
         />
