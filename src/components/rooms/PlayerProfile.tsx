@@ -13,6 +13,7 @@ interface PlayerProfileProps {
     displayText: string;
     teamName?: string;
   };
+  onDataRefresh?: () => void;
 }
 
 export function PlayerProfile({ 
@@ -21,7 +22,8 @@ export function PlayerProfile({
   isHost, 
   roomId, 
   currentGameweek,
-  playerStatus 
+  playerStatus,
+  onDataRefresh
 }: PlayerProfileProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [historicPicks, setHistoricPicks] = useState<Array<{
@@ -39,6 +41,10 @@ export function PlayerProfile({
       try {
         const picks = await PlayerStatusService.getPlayerHistoricPicks(roomId, playerId);
         setHistoricPicks(picks);
+        // Refresh parent data to ensure latest picks are shown
+        if (onDataRefresh) {
+          onDataRefresh();
+        }
       } catch (error) {
         console.error('Failed to load historic picks:', error);
       } finally {

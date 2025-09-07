@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, DollarSign, Copy, Crown, Settings, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Users, DollarSign, Copy, Crown, Settings, CheckCircle, RefreshCw } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { GameweekFixtures } from '../components/rooms/GameweekFixtures';
 import { PickInterface } from '../components/rooms/PickInterface';
@@ -60,6 +60,7 @@ export function RoomPage() {
   }>>([]);
   const [showWinnerCelebration, setShowWinnerCelebration] = useState(false);
   const [winner, setWinner] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     console.log('RoomPage mounted with ID:', id);
@@ -77,6 +78,17 @@ export function RoomPage() {
       checkForWinner();
     }
   }, [room, gameState]);
+
+  // Auto-refresh data every 30 seconds to keep everything up-to-date
+  useEffect(() => {
+    if (!id) return;
+
+    const interval = setInterval(() => {
+      refreshAllData();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [id]);
 
   const loadRoomDetails = async () => {
     if (!id) return;
@@ -109,6 +121,26 @@ export function RoomPage() {
       setPlayerStatuses(statuses);
     } catch (err) {
       console.error('Error loading player statuses:', err);
+    }
+  };
+
+  const refreshAllData = async () => {
+    if (!id) return;
+    
+    try {
+      setRefreshing(true);
+      // Reload room details and player statuses
+      const roomData = await RoomService.getRoomDetails(id);
+      setRoom(roomData);
+      
+      if (roomData) {
+        await loadPlayerStatuses(roomData.current_gameweek);
+        await loadGameState();
+      }
+    } catch (err) {
+      console.error('Error refreshing data:', err);
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -247,11 +279,25 @@ export function RoomPage() {
                 <ArrowLeft size={20} />
               </Button>
               <div>
-                <h1 className="text-xl font-semibold">{room.name}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-semibold">{room.name}</h1>
+                  {refreshing && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00E5A0]"></div>
+                  )}
+                </div>
                 <p className="text-sm text-[#737373]">Room Code: {room.invite_code}</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
+              <Button
+                onClick={refreshAllData}
+                variant="outline"
+                className="border-[#404040] text-white hover:bg-[#404040]"
+                disabled={refreshing}
+              >
+                <RefreshCw size={16} className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
               <Button
                 onClick={() => copyToClipboard(`${window.location.origin}/rooms/${room.id}`)}
                 variant="outline"
@@ -316,6 +362,7 @@ export function RoomPage() {
                         roomId={room.id}
                         currentGameweek={room.current_gameweek}
                         playerStatus={playerStatus.status}
+                        onDataRefresh={refreshAllData}
                       />
                     );
                   })
@@ -356,10 +403,7 @@ export function RoomPage() {
               <PickInterface
                 roomId={room.id}
                 currentGameweek={room.current_gameweek}
-                onPickMade={() => {
-                  loadRoomDetails();
-                  loadGameState();
-                }}
+                onPickMade={refreshAllData}
                 playerStatus={getCurrentUserStatus()}
               />
             ) : null}
