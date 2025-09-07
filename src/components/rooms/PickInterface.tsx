@@ -233,7 +233,7 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
         <h3 className="text-lg font-semibold text-white mb-4">Select Gameweek</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {getAvailableGameweeks()
-            .slice(0, showAllGameweeks ? undefined : 4) // Show 4 by default, all if expanded
+            .slice(0, showAllGameweeks ? undefined : 6) // Show 6 by default, all if expanded
             .map((gw) => {
             const status = getPickStatus(gw.gw);
             const deadlinePassed = isDeadlinePassed(gw.gw);
@@ -266,14 +266,14 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
           })}
         </div>
         
-        {getAvailableGameweeks().length > 4 && (
+        {getAvailableGameweeks().length > 6 && (
           <div className="mt-4 text-center">
             <Button
               onClick={() => setShowAllGameweeks(!showAllGameweeks)}
               variant="outline"
               className="border-white/20 text-white hover:bg-white/10"
             >
-              {showAllGameweeks ? 'Show Less' : `Show More (${getAvailableGameweeks().length - 4} more)`}
+              {showAllGameweeks ? 'Show Less' : `Show More (${getAvailableGameweeks().length - 6} more)`}
             </Button>
           </div>
         )}

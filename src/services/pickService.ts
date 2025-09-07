@@ -6,8 +6,13 @@ export class PickService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    // Validate team name
-    if (!PREMIER_LEAGUE_TEAMS.includes(teamName as any)) {
+    // Validate team name - check if it exists in the database
+    const { data: validTeams } = await supabase
+      .from('pl_teams')
+      .select('name')
+      .eq('name', teamName);
+    
+    if (!validTeams || validTeams.length === 0) {
       throw new Error('Invalid team selection');
     }
 
