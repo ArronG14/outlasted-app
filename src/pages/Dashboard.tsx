@@ -34,9 +34,8 @@ export function Dashboard() {
               <span className="text-[#737373]">Dashboard</span>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-[#D4D4D4]">Welcome, {user?.email}</span>
               <span className="text-[#D4D4D4]">
-                Welcome, {profile?.display_name || user?.email?.split('@')[0] || 'Player'}
+                Welcome, {user?.email?.split('@')[0] || 'Player'}
               </span>
               <Button 
                 variant="outline" 
@@ -87,7 +86,7 @@ export function Dashboard() {
               <Trophy className="text-[#C9B037]" size={24} />
               <h3 className="text-lg font-semibold">Total Wins</h3>
             </div>
-            <p className="text-3xl font-bold text-[#00E5A0]">{profile?.total_wins || 0}</p>
+            <p className="text-3xl font-bold text-[#00E5A0]">0</p>
           </div>
           
           <div className="bg-[#262626] p-6 rounded-xl">
@@ -95,7 +94,7 @@ export function Dashboard() {
               <Trophy className="text-[#C9B037]" size={24} />
               <h3 className="text-lg font-semibold">Total Earnings</h3>
             </div>
-            <p className="text-3xl font-bold text-[#00E5A0]">£{profile?.total_earnings || 0}</p>
+            <p className="text-3xl font-bold text-[#00E5A0]">£0</p>
           </div>
         </div>
 
@@ -106,7 +105,7 @@ export function Dashboard() {
               <Users className="text-[#3D5A80]" size={24} />
               <h3 className="text-lg font-semibold">Active Rooms</h3>
             </div>
-            <p className="text-3xl font-bold text-[#00E5A0]">{profile?.total_rooms || 0}</p>
+            <p className="text-3xl font-bold text-[#00E5A0]">0</p>
           </div>
           
           <div className="bg-[#262626] p-6 rounded-xl">
@@ -114,7 +113,7 @@ export function Dashboard() {
               <Clock className="text-[#EE6C4D]" size={24} />
               <h3 className="text-lg font-semibold">Best Streak</h3>
             </div>
-            <p className="text-3xl font-bold text-[#00E5A0]">{profile?.best_streak || 0}</p>
+            <p className="text-3xl font-bold text-[#00E5A0]">0</p>
           </div>
         </div>
 
