@@ -1,10 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
+import AppSimple from './AppSimple.tsx';
 import './index.css';
 
 // Cache busting - log version info
-const APP_VERSION = '2.0.1';
+const APP_VERSION = '2.0.2-SIMPLE';
 console.log(`OUTLASTED App v${APP_VERSION} - Cache Busting Enabled`);
 console.log('Build timestamp:', new Date().toISOString());
 
@@ -27,6 +27,6 @@ if ('caches' in window) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <AppSimple />
   </StrictMode>
 );
