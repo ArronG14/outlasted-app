@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Clock, AlertCircle, Users } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, Users, X } from 'lucide-react';
 import { PickService } from '../../services/pickService';
 import { FPLService } from '../../services/fplService';
 import { Button } from '../ui/Button';
 import { PREMIER_LEAGUE_TEAMS } from '../../types/database';
 import { Fixture } from '../../types/fpl';
+import { supabase } from '../../lib/supabase';
 
 interface PickInterfaceProps {
   roomId: string;
@@ -98,6 +99,31 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
     }
   };
 
+  const handleRemovePick = async (gameweek: number) => {
+    try {
+      setLoading(true);
+      setError('');
+      // Remove the pick for this gameweek
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { error } = await supabase
+        .from('picks')
+        .delete()
+        .eq('room_id', roomId)
+        .eq('player_id', user.id)
+        .eq('gameweek', gameweek);
+
+      if (error) throw error;
+      await loadUserPicks();
+      onPickMade();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove pick');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getPickStatus = (gameweek: number) => {
     const pick = userPicks.find(p => p.gameweek === gameweek);
     if (!pick) return 'awaiting';
@@ -117,9 +143,20 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
     return userPicks.map(pick => pick.team_name);
   };
 
-  const getAvailableTeams = () => {
-    const usedTeams = getUsedTeams();
-    return PREMIER_LEAGUE_TEAMS.filter(team => !usedTeams.includes(team));
+  const getTeamPickInfo = (teamName: string) => {
+    const pick = userPicks.find(p => p.team_name === teamName);
+    return pick ? { gameweek: pick.gameweek, isLocked: pick.is_locked } : null;
+  };
+
+  const canPickTeam = (teamName: string, currentGameweek: number) => {
+    const pickInfo = getTeamPickInfo(teamName);
+    if (!pickInfo) return true; // Team not picked yet
+    
+    // Can't pick if already picked for this gameweek
+    if (pickInfo.gameweek === currentGameweek) return false;
+    
+    // Can pick if picked for future gameweek (will replace that pick)
+    return pickInfo.gameweek > currentGameweek;
   };
 
   return (
@@ -134,21 +171,31 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
 
       {/* Historic Picks Bar */}
       {userPicks.length > 0 && (
-        <div className="bg-[#262626] rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-[#F8F8F6] mb-3">Your Picks</h3>
-          <div className="flex flex-wrap gap-2">
+        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+          <h3 className="text-lg font-semibold text-white mb-4">Your Picks</h3>
+          <div className="flex flex-wrap gap-3">
             {userPicks
               .sort((a, b) => a.gameweek - b.gameweek)
               .map((pick) => (
                 <div
                   key={pick.id}
-                  className={`px-3 py-1 rounded-full text-sm ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
                     pick.is_locked 
-                      ? 'bg-[#737373]/20 text-[#737373]' 
-                      : 'bg-[#00E5A0]/20 text-[#00E5A0]'
+                      ? 'bg-white/10 text-white/70 border border-white/20' 
+                      : 'bg-[#00E5A0]/20 text-[#00E5A0] border border-[#00E5A0]/30'
                   }`}
                 >
-                  GW{pick.gameweek}: {pick.team_name}
+                  <span className="font-bold">GW{pick.gameweek}:</span>
+                  <span>{pick.team_name}</span>
+                  {!pick.is_locked && !isDeadlinePassed(pick.gameweek) && (
+                    <button
+                      onClick={() => handleRemovePick(pick.gameweek)}
+                      disabled={loading}
+                      className="ml-1 p-1 hover:bg-red-500/20 rounded transition-colors"
+                    >
+                      <X size={12} className="text-red-400" />
+                    </button>
+                  )}
                 </div>
               ))}
           </div>
@@ -156,9 +203,9 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
       )}
 
       {/* Gameweek Selection */}
-      <div className="bg-[#262626] rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-[#F8F8F6] mb-3">Select Gameweek</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <h3 className="text-lg font-semibold text-white mb-4">Select Gameweek</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {gameweeks
             .filter(gw => !gw.finished) // Only show future gameweeks
             .slice(0, 12) // Show more gameweeks
@@ -171,18 +218,20 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
                 key={gw.gw}
                 onClick={() => setSelectedGameweek(gw.gw)}
                 disabled={deadlinePassed}
-                className={`p-2 text-sm ${
+                className={`p-3 text-sm font-semibold transition-all ${
                   selectedGameweek === gw.gw
-                    ? 'bg-[#00E5A0] text-black'
+                    ? 'bg-[#00E5A0] text-black shadow-lg shadow-[#00E5A0]/25'
                     : deadlinePassed
-                    ? 'bg-[#404040] text-[#737373] cursor-not-allowed'
+                    ? 'bg-white/5 text-white/30 border border-white/10 cursor-not-allowed'
                     : status === 'picked'
-                    ? 'bg-[#C9B037]/20 text-[#C9B037] border border-[#C9B037]'
-                    : 'bg-[#171717] border border-[#404040] hover:border-[#737373]'
+                    ? 'bg-[#00E5A0]/20 text-[#00E5A0] border-2 border-[#00E5A0] hover:bg-[#00E5A0]/30'
+                    : 'bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:border-white/30'
                 }`}
               >
-                GW{gw.gw}
-                {status === 'picked' && <CheckCircle size={12} className="ml-1" />}
+                <div className="flex items-center gap-1">
+                  <span>GW{gw.gw}</span>
+                  {status === 'picked' && <CheckCircle size={14} />}
+                </div>
               </Button>
             );
           })}
@@ -191,15 +240,15 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
 
       {/* Fixtures and Team Selection */}
       {selectedGameweek && !isDeadlinePassed(selectedGameweek) && (
-        <div className="bg-[#262626] rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-[#F8F8F6] mb-3">
+        <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+          <h3 className="text-lg font-semibold text-white mb-4">
             Select Team for Gameweek {selectedGameweek}
           </h3>
           
           {loadingFixtures ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00E5A0] mx-auto"></div>
-              <p className="text-[#737373] mt-2">Loading fixtures...</p>
+              <p className="text-white/70 mt-2">Loading fixtures...</p>
             </div>
           ) : fixtures.length > 0 ? (
             <div className="space-y-3">
@@ -215,48 +264,81 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
                   timeZone: 'Europe/London'
                 });
                 
-                const usedTeams = getUsedTeams();
-                const homeAvailable = !usedTeams.includes(homeTeam);
-                const awayAvailable = !usedTeams.includes(awayTeam);
+                const homePickInfo = getTeamPickInfo(homeTeam);
+                const awayPickInfo = getTeamPickInfo(awayTeam);
+                const homeCanPick = canPickTeam(homeTeam, selectedGameweek);
+                const awayCanPick = canPickTeam(awayTeam, selectedGameweek);
                 
                 return (
-                  <div key={fixture.fixture_id} className="bg-[#171717] rounded-lg p-4 border border-[#404040]">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-[#737373] text-sm">{kickoffTime}</span>
+                  <div key={fixture.fixture_id} className="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-white/20 transition-all">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-white/70 text-sm font-medium">{kickoffTime}</span>
                     </div>
                     
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-4">
+                      {/* Home Team */}
+                      <div className="flex-1">
                         <Button
                           onClick={() => setSelectedTeam(homeTeam)}
-                          disabled={!homeAvailable || loading}
-                          className={`flex-1 mr-2 p-3 text-sm ${
+                          disabled={!homeCanPick || loading}
+                          className={`w-full p-4 text-sm font-semibold transition-all ${
                             selectedTeam === homeTeam
-                              ? 'bg-[#00E5A0] text-black'
-                              : !homeAvailable
-                              ? 'bg-[#404040] text-[#737373] cursor-not-allowed'
-                              : 'bg-[#171717] border border-[#404040] hover:border-[#737373]'
+                              ? 'bg-[#00E5A0] text-black shadow-lg shadow-[#00E5A0]/25'
+                              : homePickInfo?.gameweek === selectedGameweek
+                              ? 'bg-[#00E5A0]/20 text-[#00E5A0] border-2 border-[#00E5A0] cursor-default'
+                              : homePickInfo && homePickInfo.gameweek > selectedGameweek
+                              ? 'bg-[#C9B037]/20 text-[#C9B037] border-2 border-[#C9B037] hover:bg-[#C9B037]/30'
+                              : homePickInfo && homePickInfo.gameweek < selectedGameweek
+                              ? 'bg-red-500/20 text-red-400 border-2 border-red-500 cursor-not-allowed'
+                              : 'bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:border-white/30'
                           }`}
                         >
-                          {homeTeam}
-                          {!homeAvailable && <span className="ml-2 text-xs">(Used)</span>}
+                          <div className="flex flex-col items-center">
+                            <span className="font-bold">{homeTeam}</span>
+                            {homePickInfo?.gameweek === selectedGameweek && (
+                              <span className="text-xs mt-1">✓ Picked for GW{homePickInfo.gameweek}</span>
+                            )}
+                            {homePickInfo && homePickInfo.gameweek > selectedGameweek && (
+                              <span className="text-xs mt-1">Picked for GW{homePickInfo.gameweek}</span>
+                            )}
+                            {homePickInfo && homePickInfo.gameweek < selectedGameweek && (
+                              <span className="text-xs mt-1">Used in GW{homePickInfo.gameweek}</span>
+                            )}
+                          </div>
                         </Button>
-                        
-                        <span className="text-[#737373] mx-4">vs</span>
-                        
+                      </div>
+                      
+                      <div className="text-white/50 font-bold text-lg">VS</div>
+                      
+                      {/* Away Team */}
+                      <div className="flex-1">
                         <Button
                           onClick={() => setSelectedTeam(awayTeam)}
-                          disabled={!awayAvailable || loading}
-                          className={`flex-1 ml-2 p-3 text-sm ${
+                          disabled={!awayCanPick || loading}
+                          className={`w-full p-4 text-sm font-semibold transition-all ${
                             selectedTeam === awayTeam
-                              ? 'bg-[#00E5A0] text-black'
-                              : !awayAvailable
-                              ? 'bg-[#404040] text-[#737373] cursor-not-allowed'
-                              : 'bg-[#171717] border border-[#404040] hover:border-[#737373]'
+                              ? 'bg-[#00E5A0] text-black shadow-lg shadow-[#00E5A0]/25'
+                              : awayPickInfo?.gameweek === selectedGameweek
+                              ? 'bg-[#00E5A0]/20 text-[#00E5A0] border-2 border-[#00E5A0] cursor-default'
+                              : awayPickInfo && awayPickInfo.gameweek > selectedGameweek
+                              ? 'bg-[#C9B037]/20 text-[#C9B037] border-2 border-[#C9B037] hover:bg-[#C9B037]/30'
+                              : awayPickInfo && awayPickInfo.gameweek < selectedGameweek
+                              ? 'bg-red-500/20 text-red-400 border-2 border-red-500 cursor-not-allowed'
+                              : 'bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:border-white/30'
                           }`}
                         >
-                          {awayTeam}
-                          {!awayAvailable && <span className="ml-2 text-xs">(Used)</span>}
+                          <div className="flex flex-col items-center">
+                            <span className="font-bold">{awayTeam}</span>
+                            {awayPickInfo?.gameweek === selectedGameweek && (
+                              <span className="text-xs mt-1">✓ Picked for GW{awayPickInfo.gameweek}</span>
+                            )}
+                            {awayPickInfo && awayPickInfo.gameweek > selectedGameweek && (
+                              <span className="text-xs mt-1">Picked for GW{awayPickInfo.gameweek}</span>
+                            )}
+                            {awayPickInfo && awayPickInfo.gameweek < selectedGameweek && (
+                              <span className="text-xs mt-1">Used in GW{awayPickInfo.gameweek}</span>
+                            )}
+                          </div>
                         </Button>
                       </div>
                     </div>
@@ -266,19 +348,19 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-[#737373]">No fixtures available for this gameweek</p>
+              <p className="text-white/70">No fixtures available for this gameweek</p>
             </div>
           )}
 
           {selectedTeam && (
-            <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#404040]">
-              <p className="text-[#F8F8F6]">
+            <div className="flex items-center gap-4 mt-6 pt-4 border-t border-white/10">
+              <p className="text-white">
                 Selected: <span className="font-semibold text-[#00E5A0]">{selectedTeam}</span>
               </p>
               <Button
                 onClick={handleMakePick}
                 disabled={loading}
-                className="bg-[#00E5A0] text-black hover:bg-[#00E5A0]/90"
+                className="bg-[#00E5A0] text-black hover:bg-[#00E5A0]/90 font-semibold px-6 py-2"
               >
                 {loading ? 'Making Pick...' : 'Confirm Pick'}
               </Button>
@@ -288,9 +370,9 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
       )}
 
       {/* Gameweek Status Overview */}
-      <div className="bg-[#262626] rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-[#F8F8F6] mb-3">Gameweek Status</h3>
-        <div className="space-y-2">
+      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+        <h3 className="text-lg font-semibold text-white mb-4">Gameweek Status</h3>
+        <div className="space-y-3">
           {gameweeks
             .filter(gw => !gw.finished) // Only show future gameweeks
             .slice(0, 8) // Show more gameweeks
@@ -299,24 +381,24 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
             const deadlinePassed = isDeadlinePassed(gw.gw);
             
             return (
-              <div key={gw.gw} className="flex items-center justify-between">
-                <span className="text-[#F8F8F6]">Gameweek {gw.gw}</span>
+              <div key={gw.gw} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
+                <span className="text-white font-medium">Gameweek {gw.gw}</span>
                 <div className="flex items-center gap-2">
                   {status === 'picked' && (
-                    <span className="flex items-center gap-1 text-[#00E5A0] text-sm">
-                      <CheckCircle size={14} />
+                    <span className="flex items-center gap-2 text-[#00E5A0] text-sm font-medium">
+                      <CheckCircle size={16} />
                       Picked
                     </span>
                   )}
                   {status === 'awaiting' && (
-                    <span className="flex items-center gap-1 text-[#C9B037] text-sm">
-                      <Clock size={14} />
+                    <span className="flex items-center gap-2 text-[#C9B037] text-sm font-medium">
+                      <Clock size={16} />
                       Awaiting Pick
                     </span>
                   )}
                   {deadlinePassed && (
-                    <span className="flex items-center gap-1 text-[#737373] text-sm">
-                      <AlertCircle size={14} />
+                    <span className="flex items-center gap-2 text-white/50 text-sm font-medium">
+                      <AlertCircle size={16} />
                       Locked
                     </span>
                   )}
