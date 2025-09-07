@@ -4,6 +4,7 @@ import { PickService } from '../../services/pickService';
 import { FPLService } from '../../services/fplService';
 import { Button } from '../ui/Button';
 import { PREMIER_LEAGUE_TEAMS } from '../../types/database';
+import { Fixture } from '../../types/fpl';
 
 interface PickInterfaceProps {
   roomId: string;
@@ -35,11 +36,19 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [gameweeks, setGameweeks] = useState<Gameweek[]>([]);
+  const [fixtures, setFixtures] = useState<Fixture[]>([]);
+  const [loadingFixtures, setLoadingFixtures] = useState(false);
 
   useEffect(() => {
     loadUserPicks();
     loadGameweeks();
   }, [roomId]);
+
+  useEffect(() => {
+    if (selectedGameweek) {
+      loadFixtures(selectedGameweek);
+    }
+  }, [selectedGameweek]);
 
   const loadUserPicks = async () => {
     try {
@@ -53,11 +62,22 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
   const loadGameweeks = async () => {
     try {
       const gws = await FPLService.getGameweeks();
-      // Filter to only show future gameweeks (not already finished)
-      const futureGameweeks = gws.filter(gw => !gw.finished);
-      setGameweeks(futureGameweeks);
+      // Show all gameweeks (we'll filter in the UI)
+      setGameweeks(gws);
     } catch (err) {
       console.error('Error loading gameweeks:', err);
+    }
+  };
+
+  const loadFixtures = async (gameweek: number) => {
+    try {
+      setLoadingFixtures(true);
+      const fixturesData = await FPLService.listFixtures(gameweek);
+      setFixtures(fixturesData);
+    } catch (err) {
+      console.error('Error loading fixtures:', err);
+    } finally {
+      setLoadingFixtures(false);
     }
   };
 
@@ -139,7 +159,10 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
       <div className="bg-[#262626] rounded-lg p-4">
         <h3 className="text-lg font-semibold text-[#F8F8F6] mb-3">Select Gameweek</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-          {gameweeks.slice(0, 8).map((gw) => {
+          {gameweeks
+            .filter(gw => !gw.finished) // Only show future gameweeks
+            .slice(0, 12) // Show more gameweeks
+            .map((gw) => {
             const status = getPickStatus(gw.gw);
             const deadlinePassed = isDeadlinePassed(gw.gw);
             
@@ -166,32 +189,89 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
         </div>
       </div>
 
-      {/* Team Selection */}
+      {/* Fixtures and Team Selection */}
       {selectedGameweek && !isDeadlinePassed(selectedGameweek) && (
         <div className="bg-[#262626] rounded-lg p-4">
           <h3 className="text-lg font-semibold text-[#F8F8F6] mb-3">
             Select Team for Gameweek {selectedGameweek}
           </h3>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-4">
-            {getAvailableTeams().map((team) => (
-              <Button
-                key={team}
-                onClick={() => setSelectedTeam(team)}
-                disabled={loading}
-                className={`p-2 text-sm ${
-                  selectedTeam === team
-                    ? 'bg-[#00E5A0] text-black'
-                    : 'bg-[#171717] border border-[#404040] hover:border-[#737373]'
-                }`}
-              >
-                {team}
-              </Button>
-            ))}
-          </div>
+          {loadingFixtures ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00E5A0] mx-auto"></div>
+              <p className="text-[#737373] mt-2">Loading fixtures...</p>
+            </div>
+          ) : fixtures.length > 0 ? (
+            <div className="space-y-3">
+              {fixtures.map((fixture) => {
+                const homeTeam = fixture.home_team?.name || 'TBD';
+                const awayTeam = fixture.away_team?.name || 'TBD';
+                const kickoffTime = new Date(fixture.kickoff_utc).toLocaleString('en-GB', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  timeZone: 'Europe/London'
+                });
+                
+                const usedTeams = getUsedTeams();
+                const homeAvailable = !usedTeams.includes(homeTeam);
+                const awayAvailable = !usedTeams.includes(awayTeam);
+                
+                return (
+                  <div key={fixture.fixture_id} className="bg-[#171717] rounded-lg p-4 border border-[#404040]">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[#737373] text-sm">{kickoffTime}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 flex items-center justify-between">
+                        <Button
+                          onClick={() => setSelectedTeam(homeTeam)}
+                          disabled={!homeAvailable || loading}
+                          className={`flex-1 mr-2 p-3 text-sm ${
+                            selectedTeam === homeTeam
+                              ? 'bg-[#00E5A0] text-black'
+                              : !homeAvailable
+                              ? 'bg-[#404040] text-[#737373] cursor-not-allowed'
+                              : 'bg-[#171717] border border-[#404040] hover:border-[#737373]'
+                          }`}
+                        >
+                          {homeTeam}
+                          {!homeAvailable && <span className="ml-2 text-xs">(Used)</span>}
+                        </Button>
+                        
+                        <span className="text-[#737373] mx-4">vs</span>
+                        
+                        <Button
+                          onClick={() => setSelectedTeam(awayTeam)}
+                          disabled={!awayAvailable || loading}
+                          className={`flex-1 ml-2 p-3 text-sm ${
+                            selectedTeam === awayTeam
+                              ? 'bg-[#00E5A0] text-black'
+                              : !awayAvailable
+                              ? 'bg-[#404040] text-[#737373] cursor-not-allowed'
+                              : 'bg-[#171717] border border-[#404040] hover:border-[#737373]'
+                          }`}
+                        >
+                          {awayTeam}
+                          {!awayAvailable && <span className="ml-2 text-xs">(Used)</span>}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-[#737373]">No fixtures available for this gameweek</p>
+            </div>
+          )}
 
           {selectedTeam && (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#404040]">
               <p className="text-[#F8F8F6]">
                 Selected: <span className="font-semibold text-[#00E5A0]">{selectedTeam}</span>
               </p>
@@ -211,7 +291,10 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
       <div className="bg-[#262626] rounded-lg p-4">
         <h3 className="text-lg font-semibold text-[#F8F8F6] mb-3">Gameweek Status</h3>
         <div className="space-y-2">
-          {gameweeks.slice(0, 6).map((gw) => {
+          {gameweeks
+            .filter(gw => !gw.finished) // Only show future gameweeks
+            .slice(0, 8) // Show more gameweeks
+            .map((gw) => {
             const status = getPickStatus(gw.gw);
             const deadlinePassed = isDeadlinePassed(gw.gw);
             
