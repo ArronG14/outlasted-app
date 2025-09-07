@@ -220,39 +220,52 @@ export function RoomPage() {
             </div>
 
             {/* Players List */}
-            <div className="bg-[#262626] rounded-xl p-6">
-              <h2 className="text-xl font-semibold mb-4">Players ({room.current_players})</h2>
+            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-white">Players</h2>
+                <div className="text-sm text-white/70">
+                  <span className="text-[#00E5A0] font-semibold">
+                    {room.room_players.filter(p => p.status === 'active').length}
+                  </span> active / {room.current_players} total
+                </div>
+              </div>
               <div className="space-y-3">
                 {room.room_players.map((player) => (
                   <div
                     key={player.id}
-                    className="flex items-center justify-between p-3 bg-[#171717] rounded-lg"
+                    className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-[#404040] rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium">
+                      <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-white">
                           {player.profiles.display_name.charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div>
-                        <p className="text-[#F8F8F6] font-medium">
+                        <p className="text-white font-medium">
                           {player.profiles.display_name}
                           {player.profiles.display_name === room.profiles.display_name && (
                             <Crown className="inline ml-2 text-[#C9B037]" size={16} />
                           )}
                         </p>
-                        <p className="text-[#737373] text-sm">
+                        <p className="text-white/60 text-sm">
                           Joined {new Date(player.joined_at).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      player.status === 'active' ? 'bg-[#00E5A0]/20 text-[#00E5A0]' :
-                      player.status === 'eliminated' ? 'bg-[#DC2626]/20 text-[#DC2626]' :
-                      'bg-[#C9B037]/20 text-[#C9B037]'
-                    }`}>
-                      {player.status.toUpperCase()}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {/* Show current gameweek pick status */}
+                      <span className="text-white/60 text-xs">
+                        {player.status === 'active' ? 'Active' : 'Eliminated'}
+                      </span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        player.status === 'active' ? 'bg-[#00E5A0]/20 text-[#00E5A0]' :
+                        player.status === 'eliminated' ? 'bg-red-500/20 text-red-400' :
+                        'bg-[#C9B037]/20 text-[#C9B037]'
+                      }`}>
+                        {player.status.toUpperCase()}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>

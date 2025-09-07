@@ -39,6 +39,7 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
   const [gameweeks, setGameweeks] = useState<Gameweek[]>([]);
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [loadingFixtures, setLoadingFixtures] = useState(false);
+  const [showAllGameweeks, setShowAllGameweeks] = useState(false);
 
   useEffect(() => {
     loadUserPicks();
@@ -159,13 +160,38 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
     return pickInfo.gameweek > currentGameweek;
   };
 
+  const isUserEliminated = () => {
+    // Check if user has any losing picks
+    return userPicks.some(pick => pick.result === 'lose');
+  };
+
+  const getPickResult = (gameweek: number) => {
+    const pick = userPicks.find(p => p.gameweek === gameweek);
+    return pick?.result || null;
+  };
+
+  const getAvailableGameweeks = () => {
+    // Filter out gameweeks 1-3 and only show from current gameweek onwards
+    return gameweeks.filter(gw => gw.gw >= currentGameweek);
+  };
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-[#F8F8F6]">Make Your Picks</h2>
+      <h2 className="text-2xl font-bold text-white">Make Your Picks</h2>
+      
+      {isUserEliminated() && (
+        <div className="bg-red-500/20 border border-red-500 rounded-xl p-4">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="text-red-400" size={20} />
+            <p className="text-red-400 font-semibold">You have been eliminated from this room</p>
+          </div>
+          <p className="text-red-300 text-sm mt-1">You cannot make any more picks</p>
+        </div>
+      )}
       
       {error && (
-        <div className="bg-[#DC2626]/20 border border-[#DC2626] rounded-lg p-4">
-          <p className="text-[#DC2626]">{error}</p>
+        <div className="bg-red-500/20 border border-red-500 rounded-xl p-4">
+          <p className="text-red-400">{error}</p>
         </div>
       )}
 
@@ -206,22 +232,23 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
       <div className="bg-white/5 rounded-xl p-6 border border-white/10">
         <h3 className="text-lg font-semibold text-white mb-4">Select Gameweek</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          {gameweeks
-            .filter(gw => !gw.finished) // Only show future gameweeks
-            .slice(0, 12) // Show more gameweeks
+          {getAvailableGameweeks()
+            .slice(0, showAllGameweeks ? undefined : 4) // Show 4 by default, all if expanded
             .map((gw) => {
             const status = getPickStatus(gw.gw);
             const deadlinePassed = isDeadlinePassed(gw.gw);
+            const result = getPickResult(gw.gw);
+            const isEliminated = isUserEliminated();
             
             return (
               <Button
                 key={gw.gw}
                 onClick={() => setSelectedGameweek(gw.gw)}
-                disabled={deadlinePassed}
+                disabled={deadlinePassed || isEliminated}
                 className={`p-3 text-sm font-semibold transition-all ${
                   selectedGameweek === gw.gw
                     ? 'bg-[#00E5A0] text-black shadow-lg shadow-[#00E5A0]/25'
-                    : deadlinePassed
+                    : deadlinePassed || isEliminated
                     ? 'bg-white/5 text-white/30 border border-white/10 cursor-not-allowed'
                     : status === 'picked'
                     ? 'bg-[#00E5A0]/20 text-[#00E5A0] border-2 border-[#00E5A0] hover:bg-[#00E5A0]/30'
@@ -231,15 +258,29 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
                 <div className="flex items-center gap-1">
                   <span>GW{gw.gw}</span>
                   {status === 'picked' && <CheckCircle size={14} />}
+                  {result === 'win' && <span className="text-green-400">✓</span>}
+                  {result === 'lose' && <span className="text-red-400">✗</span>}
                 </div>
               </Button>
             );
           })}
         </div>
+        
+        {getAvailableGameweeks().length > 4 && (
+          <div className="mt-4 text-center">
+            <Button
+              onClick={() => setShowAllGameweeks(!showAllGameweeks)}
+              variant="outline"
+              className="border-white/20 text-white hover:bg-white/10"
+            >
+              {showAllGameweeks ? 'Show Less' : `Show More (${getAvailableGameweeks().length - 4} more)`}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Fixtures and Team Selection */}
-      {selectedGameweek && !isDeadlinePassed(selectedGameweek) && (
+      {selectedGameweek && !isDeadlinePassed(selectedGameweek) && !isUserEliminated() && (
         <div className="bg-white/5 rounded-xl p-6 border border-white/10">
           <h3 className="text-lg font-semibold text-white mb-4">
             Select Team for Gameweek {selectedGameweek}
@@ -373,30 +414,42 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
       <div className="bg-white/5 rounded-xl p-6 border border-white/10">
         <h3 className="text-lg font-semibold text-white mb-4">Gameweek Status</h3>
         <div className="space-y-3">
-          {gameweeks
-            .filter(gw => !gw.finished) // Only show future gameweeks
-            .slice(0, 8) // Show more gameweeks
+          {getAvailableGameweeks()
+            .slice(0, showAllGameweeks ? undefined : 8) // Show 8 by default, all if expanded
             .map((gw) => {
             const status = getPickStatus(gw.gw);
             const deadlinePassed = isDeadlinePassed(gw.gw);
+            const result = getPickResult(gw.gw);
             
             return (
               <div key={gw.gw} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
                 <span className="text-white font-medium">Gameweek {gw.gw}</span>
                 <div className="flex items-center gap-2">
-                  {status === 'picked' && (
+                  {result === 'win' && (
+                    <span className="flex items-center gap-2 text-green-400 text-sm font-medium">
+                      <CheckCircle size={16} />
+                      Won
+                    </span>
+                  )}
+                  {result === 'lose' && (
+                    <span className="flex items-center gap-2 text-red-400 text-sm font-medium">
+                      <AlertCircle size={16} />
+                      Lost
+                    </span>
+                  )}
+                  {!result && status === 'picked' && (
                     <span className="flex items-center gap-2 text-[#00E5A0] text-sm font-medium">
                       <CheckCircle size={16} />
                       Picked
                     </span>
                   )}
-                  {status === 'awaiting' && (
+                  {!result && status === 'awaiting' && (
                     <span className="flex items-center gap-2 text-[#C9B037] text-sm font-medium">
                       <Clock size={16} />
                       Awaiting Pick
                     </span>
                   )}
-                  {deadlinePassed && (
+                  {deadlinePassed && !result && (
                     <span className="flex items-center gap-2 text-white/50 text-sm font-medium">
                       <AlertCircle size={16} />
                       Locked
@@ -407,6 +460,18 @@ export function PickInterface({ roomId, currentGameweek, onPickMade }: PickInter
             );
           })}
         </div>
+        
+        {getAvailableGameweeks().length > 8 && (
+          <div className="mt-4 text-center">
+            <Button
+              onClick={() => setShowAllGameweeks(!showAllGameweeks)}
+              variant="outline"
+              className="border-white/20 text-white hover:bg-white/10"
+            >
+              {showAllGameweeks ? 'Show Less' : `Show More (${getAvailableGameweeks().length - 8} more)`}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
