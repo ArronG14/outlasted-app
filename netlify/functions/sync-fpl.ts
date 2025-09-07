@@ -212,24 +212,11 @@ async function upsertFixtures(fixtures: FPLFixture[]): Promise<number> {
 
 // Get upcoming gameweeks to sync
 function getUpcomingGameweeks(gameweeks: FPLGameweek[]): number[] {
-  const currentGw = gameweeks.find(gw => gw.is_current)?.id;
-  const nextGw = gameweeks.find(gw => gw.is_next)?.id;
+  // Sync ALL gameweeks instead of just 8
+  const allGameweeks = gameweeks.map(gw => gw.id);
   
-  if (!currentGw && !nextGw) {
-    console.log('No current or next gameweek found, syncing first 8 gameweeks');
-    return gameweeks.slice(0, 8).map(gw => gw.id);
-  }
-  
-  const startGw = currentGw || nextGw!;
-  const upcomingGws: number[] = [];
-  
-  // Include current + next 6-8 gameweeks
-  for (let i = 0; i < 8 && (startGw + i) <= 38; i++) {
-    upcomingGws.push(startGw + i);
-  }
-  
-  console.log(`Syncing gameweeks: ${upcomingGws.join(', ')}`);
-  return upcomingGws;
+  console.log(`Syncing all gameweeks: ${allGameweeks.join(', ')}`);
+  return allGameweeks;
 }
 
 // Main sync function
