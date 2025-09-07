@@ -209,11 +209,18 @@ export class RoomService {
         .eq('room_id', roomId);
 
       if (!playersError && playersData) {
-        // Clean up players data - ensure profiles are never null
-        players = playersData.map(player => ({
-          ...player,
-          profiles: player.profiles || { display_name: 'Player', avatar_url: null }
-        }));
+        // Clean up players data - only use fallback if profile is truly missing
+        players = playersData.map(player => {
+          // If profiles is null or undefined, use fallback
+          if (!player.profiles) {
+            return {
+              ...player,
+              profiles: { display_name: 'Player', avatar_url: null }
+            };
+          }
+          // Otherwise, keep the real profile data
+          return player;
+        });
         console.log('Players loaded:', players);
       } else {
         console.log('Players fetch failed:', playersError);

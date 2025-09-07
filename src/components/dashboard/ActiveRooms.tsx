@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Crown, ExternalLink, Clock, Trophy } from 'lucide-react';
 import { RoomService } from '../../services/roomService';
 import { useNavigate } from 'react-router-dom';
+import { useAuthSimple } from '../../hooks/useAuthSimple';
 
 interface UserRoom {
   id: string;
@@ -23,6 +24,7 @@ export function ActiveRooms() {
   const [upcomingRooms, setUpcomingRooms] = useState<UserRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuthSimple();
 
   useEffect(() => {
     loadUserRooms();
@@ -135,7 +137,7 @@ export function ActiveRooms() {
               <RoomCard 
                 key={room.id} 
                 room={room} 
-                isHost={room.host_id === (ongoingRooms[0]?.host_id)} 
+                isHost={room.host_id === user?.id} 
               />
             ))}
           </div>
@@ -157,7 +159,7 @@ export function ActiveRooms() {
               <RoomCard 
                 key={room.id} 
                 room={room} 
-                isHost={room.host_id === (upcomingRooms[0]?.host_id)} 
+                isHost={room.host_id === user?.id} 
               />
             ))}
           </div>
