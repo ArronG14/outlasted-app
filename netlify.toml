@@ -26,21 +26,32 @@
   port = 5173
   publish = "dist"
 
+# Force no caching for HTML files
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+    Expires = "0"
+
 # Fix MIME types for JavaScript files
 [[headers]]
   for = "/*.js"
   [headers.values]
     Content-Type = "application/javascript"
+    Cache-Control = "no-cache, no-store, must-revalidate"
 
 [[headers]]
   for = "/*.mjs"
   [headers.values]
     Content-Type = "application/javascript"
+    Cache-Control = "no-cache, no-store, must-revalidate"
 
 [[headers]]
   for = "/*.ts"
   [headers.values]
     Content-Type = "application/javascript"
+    Cache-Control = "no-cache, no-store, must-revalidate"
 
 # Security headers
 [[headers]]
