@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OUTLASTED - Test Page</title>
+    <style>
+        body {
+            background: #0A0A0A;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            max-width: 600px;
+        }
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #00E5A0;
+            margin-bottom: 20px;
+        }
+        .status {
+            background: #171717;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #404040;
+        }
+        .success {
+            color: #00E5A0;
+        }
+        .error {
+            color: #ff6b6b;
+        }
+        .info {
+            color: #737373;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        button {
+            background: #00E5A0;
+            color: black;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #00d490;
+        }
+        .debug {
+            background: #262626;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: left;
+            font-family: monospace;
+            font-size: 0.8rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">OUTLASTED</div>
+        <h1>Test Page - Cache Busting</h1>
+        
+        <div class="status">
+            <h2 class="success">✅ Page Loaded Successfully!</h2>
+            <p>This is a static HTML page that bypasses all caching issues.</p>
+            <div class="info">
+                Timestamp: <span id="timestamp"></span><br>
+                User Agent: <span id="userAgent"></span>
+            </div>
+        </div>
+
+        <div class="status">
+            <h3>Environment Test</h3>
+            <div id="envStatus">Testing...</div>
+        </div>
+
+        <div class="status">
+            <h3>Supabase Connection Test</h3>
+            <div id="supabaseStatus">Testing...</div>
+        </div>
+
+        <div class="debug" id="debugInfo">
+            <strong>Debug Information:</strong><br>
+            <span id="debugContent">Loading...</span>
+        </div>
+
+        <button onclick="testSupabase()">Test Supabase Connection</button>
+        <button onclick="clearAllCaches()">Clear All Caches</button>
+        <button onclick="goToApp()">Go to Main App</button>
+        <button onclick="location.reload()">Reload This Page</button>
+    </div>
+
+    <script>
+        // Set timestamp
+        document.getElementById('timestamp').textContent = new Date().toISOString();
+        document.getElementById('userAgent').textContent = navigator.userAgent;
+
+        // Test environment variables
+        function testEnvironment() {
+            const envStatus = document.getElementById('envStatus');
+            try {
+                // Check if we can access environment variables
+                const hasSupabaseUrl = window.location.hostname.includes('netlify') || 
+                                     window.location.hostname.includes('outlasted');
+                
+                if (hasSupabaseUrl) {
+                    envStatus.innerHTML = '<span class="success">✅ Environment looks good</span>';
+                } else {
+                    envStatus.innerHTML = '<span class="error">❌ Environment issue detected</span>';
+                }
+            } catch (error) {
+                envStatus.innerHTML = `<span class="error">❌ Environment error: ${error.message}</span>`;
+            }
+        }
+
+        // Test Supabase connection
+        async function testSupabase() {
+            const status = document.getElementById('supabaseStatus');
+            status.innerHTML = 'Testing Supabase connection...';
+            
+            try {
+                // Try to load the Supabase client
+                const response = await fetch('/src/lib/supabase.ts');
+                if (response.ok) {
+                    status.innerHTML = '<span class="success">✅ Supabase file accessible</span>';
+                } else {
+                    status.innerHTML = '<span class="error">❌ Supabase file not found</span>';
+                }
+            } catch (error) {
+                status.innerHTML = `<span class="error">❌ Supabase error: ${error.message}</span>`;
+            }
+        }
+
+        // Clear all caches
+        function clearAllCaches() {
+            try {
+                // Clear localStorage
+                localStorage.clear();
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                
+                // Clear service worker caches
+                if ('caches' in window) {
+                    caches.keys().then(names => {
+                        names.forEach(name => {
+                            caches.delete(name);
+                        });
+                    });
+                }
+                
+                alert('All caches cleared!');
+            } catch (error) {
+                alert('Error clearing caches: ' + error.message);
+            }
+        }
+
+        // Go to main app
+        function goToApp() {
+            // Add cache busting parameter
+            const timestamp = Date.now();
+            window.location.href = `/?v=${timestamp}`;
+        }
+
+        // Update debug info
+        function updateDebugInfo() {
+            const debugContent = document.getElementById('debugContent');
+            const info = {
+                url: window.location.href,
+                timestamp: new Date().toISOString(),
+                localStorage: Object.keys(localStorage).length + ' items',
+                sessionStorage: Object.keys(sessionStorage).length + ' items',
+                cookies: document.cookie.length + ' characters',
+                userAgent: navigator.userAgent.substring(0, 100) + '...',
+                language: navigator.language,
+                platform: navigator.platform,
+                online: navigator.onLine
+            };
+            
+            debugContent.innerHTML = Object.entries(info)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join('<br>');
+        }
+
+        // Initialize
+        testEnvironment();
+        updateDebugInfo();
+        
+        // Update debug info every 5 seconds
+        setInterval(updateDebugInfo, 5000);
+    </script>
+</body>
+</html>

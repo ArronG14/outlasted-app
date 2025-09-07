@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OUTLASTED - Fresh Load</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        body {
+            background: #0A0A0A;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            max-width: 500px;
+        }
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #00E5A0;
+            margin-bottom: 20px;
+        }
+        .spinner {
+            border: 4px solid #404040;
+            border-top: 4px solid #00E5A0;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .info {
+            color: #737373;
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">OUTLASTED</div>
+        <h1>Loading Fresh Version...</h1>
+        <div class="spinner"></div>
+        <p>Clearing cache and loading the latest version...</p>
+        <div class="info">
+            <p>If this page doesn't redirect automatically, <a href="/" style="color: #00E5A0;">click here</a></p>
+        </div>
+    </div>
+
+    <script>
+        // Clear all possible caches
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+        } catch (error) {
+            console.error('Error clearing caches:', error);
+        }
+
+        // Force redirect to main app with cache busting
+        setTimeout(() => {
+            const timestamp = Date.now();
+            window.location.replace(`/?fresh=${timestamp}&nocache=true`);
+        }, 2000);
+    </script>
+</body>
+</html>

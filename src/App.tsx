@@ -6,6 +6,7 @@ import { JoinPage } from './pages/JoinPage';
 import { InvitePage } from './pages/InvitePage';
 import { RoomPage } from './pages/RoomPage';
 import { FixturesPage } from './pages/FixturesPage';
+import { TestPage } from './pages/TestPage';
 import { useAuth } from './hooks/useAuth';
 
 function LandingWrapper() {
@@ -64,6 +65,7 @@ function App() {
         <Route path="/invite/:code" element={user ? <InvitePage /> : <Navigate to="/" />} />
         <Route path="/rooms/:id" element={user ? <RoomPage /> : <Navigate to="/?next=/rooms" />} />
         <Route path="/fixtures" element={user ? <FixturesPage /> : <Navigate to="/?next=/fixtures" />} />
+        <Route path="/test" element={<TestPage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
