@@ -57,21 +57,25 @@ export function CreateRoomForm({ onClose, onSuccess }: CreateRoomFormProps) {
     }
 
     try {
+      console.log('Submitting room creation form...');
+      
       const result = await RoomService.createRoom({
         name: name.trim(),
         description: description.trim() || undefined,
-        buy_in: buyInNum,
-        max_players: maxPlayersNum,
+        buy_in: parseFloat(buyIn),
+        max_players: parseInt(maxPlayers),
         is_public: isPublic,
         custom_code: customCode.trim() || undefined,
         dgw_rule: dgwRule,
         no_pick_policy: noPickPolicy,
-        deal_threshold: dealThresholdNum,
+        deal_threshold: parseInt(dealThreshold),
       });
 
+      console.log('Room created successfully:', result);
       onSuccess(result.id);
       onClose();
     } catch (err) {
+      console.error('Room creation error in form:', err);
       setError(err instanceof Error ? err.message : 'Failed to create room');
     }
 

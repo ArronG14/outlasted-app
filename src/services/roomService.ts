@@ -43,26 +43,37 @@ interface PublicRoom {
 
 export class RoomService {
   static async createRoom(roomData: CreateRoomParams): Promise<CreateRoomResponse> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
 
-    // Convert buy_in to cents for the database function
-    const buyInCents = Math.round(roomData.buy_in * 100);
+      console.log('Creating room with data:', roomData);
+      console.log('User ID:', user.id);
 
-    const { data, error } = await supabase.rpc('create_room', {
-      p_name: roomData.name,
-      p_buy_in_cents: buyInCents, // Send as cents (integer)
-      p_player_limit: roomData.max_players,
-      p_is_public: roomData.is_public,
-      p_code: roomData.custom_code || null,
-    });
+      // Convert buy_in to cents for the database function
+      const buyInCents = Math.round(roomData.buy_in * 100);
+      console.log('Buy-in in cents:', buyInCents);
 
-    if (error) {
-      console.error('Room creation error:', error);
-      throw error;
+      const { data, error } = await supabase.rpc('create_room', {
+        p_name: roomData.name,
+        p_buy_in_cents: buyInCents,
+        p_player_limit: roomData.max_players,
+        p_is_public: roomData.is_public,
+        p_code: roomData.custom_code || null,
+      });
+
+      console.log('RPC response:', { data, error });
+
+      if (error) {
+        console.error('Room creation error:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+      
+      return data;
+    } catch (err) {
+      console.error('Room creation failed:', err);
+      throw err;
     }
-    
-    return data;
   }
 
   static async joinRoomById(roomId: string): Promise<JoinRoomResponse> {
