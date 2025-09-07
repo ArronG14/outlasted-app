@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, UserPlus, CheckCircle, X } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuthSimple } from '../../hooks/useAuthSimple';
 import { useNavigate } from 'react-router-dom';
 
 interface Notification {
@@ -29,7 +29,7 @@ export function LoginForm({ nextUrl }: LoginFormProps) {
   const [error, setError] = useState('');
   const [notification, setNotification] = useState<Notification | null>(null);
 
-  const { signIn, signUp, signInWithGoogle, signInWithApple } = useAuth();
+  const { signIn, signUp } = useAuthSimple();
 
   // Handle successful authentication
   const handleAuthSuccess = () => {
@@ -114,39 +114,40 @@ export function LoginForm({ nextUrl }: LoginFormProps) {
     setLoading(false);
   };
 
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    setError('');
-    setNotification(null);
-    
-    const { error } = await signInWithGoogle();
-    
-    if (error) {
-      setError(error.message);
-    } else {
-      showNotification('Signing in with Google...', 'success');
-      // OAuth will handle redirect automatically
-    }
-    
-    setLoading(false);
-  };
+  // Google and Apple sign-in temporarily disabled for simplified auth
+  // const handleGoogleSignIn = async () => {
+  //   setLoading(true);
+  //   setError('');
+  //   setNotification(null);
+  //   
+  //   const { error } = await signInWithGoogle();
+  //   
+  //   if (error) {
+  //     setError(error.message);
+  //   } else {
+  //     showNotification('Signing in with Google...', 'success');
+  //     // OAuth will handle redirect automatically
+  //   }
+  //   
+  //   setLoading(false);
+  // };
 
-  const handleAppleSignIn = async () => {
-    setLoading(true);
-    setError('');
-    setNotification(null);
-    
-    const { error } = await signInWithApple();
-    
-    if (error) {
-      setError(error.message);
-    } else {
-      showNotification('Signing in with Apple...', 'success');
-      // OAuth will handle redirect automatically
-    }
-    
-    setLoading(false);
-  };
+  // const handleAppleSignIn = async () => {
+  //   setLoading(true);
+  //   setError('');
+  //   setNotification(null);
+  //   
+  //   const { error } = await signInWithApple();
+  //   
+  //   if (error) {
+  //     setError(error.message);
+  //   } else {
+  //     showNotification('Signing in with Apple...', 'success');
+  //     // OAuth will handle redirect automatically
+  //   }
+  //   
+  //   setLoading(false);
+  // };
 
   return (
     <div className="landing-card-frosted p-8 rounded-2xl w-full max-w-md animate-slide-up">
@@ -294,7 +295,8 @@ export function LoginForm({ nextUrl }: LoginFormProps) {
         <div className="flex-1 border-t border-[#D4D4D4]"></div>
       </div>
 
-      <div className="space-y-3">
+      {/* Google and Apple sign-in temporarily disabled for simplified auth */}
+      {/* <div className="space-y-3">
         <Button
           variant="google"
           className="w-full"
@@ -321,7 +323,7 @@ export function LoginForm({ nextUrl }: LoginFormProps) {
           </svg>
           Apple
         </Button>
-      </div>
+      </div> */}
 
       <div className="mt-8 text-center">
         <p className="landing-text-muted">

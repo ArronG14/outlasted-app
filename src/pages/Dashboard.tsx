@@ -6,11 +6,11 @@ import { UpcomingFixtures } from '../components/dashboard/UpcomingFixtures';
 import { ActiveRooms } from '../components/dashboard/ActiveRooms';
 import { CreateRoomForm } from '../components/rooms/CreateRoomForm';
 import { JoinRoomModal } from '../components/rooms/JoinRoomModal';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthSimple } from '../hooks/useAuthSimple';
 import { useNavigate } from 'react-router-dom';
 
 export function Dashboard() {
-  const { user, profile, signOut } = useAuth();
+  const { user, signOut } = useAuthSimple();
   const navigate = useNavigate();
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showJoinRoom, setShowJoinRoom] = useState(false);

@@ -13,7 +13,7 @@ import { RoomService } from '../services/roomService';
 import { GameStateService } from '../services/gameStateService';
 import { EliminationService } from '../services/eliminationService';
 import { LiveScoreService } from '../services/liveScoreService';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthSimple } from '../hooks/useAuthSimple';
 
 interface RoomDetails {
   id: string;
@@ -45,7 +45,7 @@ interface RoomDetails {
 export function RoomPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthSimple();
   const [room, setRoom] = useState<RoomDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

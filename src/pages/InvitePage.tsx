@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Users, DollarSign, Loader2 } from 'lucide-react';
 import { RoomService } from '../services/roomService';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthSimple } from '../hooks/useAuthSimple';
 
 export function InvitePage() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuthSimple();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [roomInfo, setRoomInfo] = useState<any>(null);
