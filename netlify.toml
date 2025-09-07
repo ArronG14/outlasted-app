@@ -26,34 +26,62 @@
   port = 5173
   publish = "dist"
 
-# Force no caching for HTML files
+# AGGRESSIVE CACHE BUSTING - Force no caching for ALL files
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate, max-age=0"
+    Pragma = "no-cache"
+    Expires = "0"
+    Last-Modified = "Thu, 01 Jan 1970 00:00:00 GMT"
+    ETag = ""
+
+# Additional cache busting for specific file types
 [[headers]]
   for = "/*.html"
   [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
+    Cache-Control = "no-cache, no-store, must-revalidate, max-age=0"
     Pragma = "no-cache"
     Expires = "0"
+    Last-Modified = "Thu, 01 Jan 1970 00:00:00 GMT"
 
-# Fix MIME types for JavaScript files
 [[headers]]
   for = "/*.js"
   [headers.values]
     Content-Type = "application/javascript"
-    Cache-Control = "no-cache, no-store, must-revalidate"
+    Cache-Control = "no-cache, no-store, must-revalidate, max-age=0"
+    Pragma = "no-cache"
+    Expires = "0"
+    Last-Modified = "Thu, 01 Jan 1970 00:00:00 GMT"
 
 [[headers]]
   for = "/*.mjs"
   [headers.values]
     Content-Type = "application/javascript"
-    Cache-Control = "no-cache, no-store, must-revalidate"
+    Cache-Control = "no-cache, no-store, must-revalidate, max-age=0"
+    Pragma = "no-cache"
+    Expires = "0"
+    Last-Modified = "Thu, 01 Jan 1970 00:00:00 GMT"
 
 [[headers]]
   for = "/*.ts"
   [headers.values]
     Content-Type = "application/javascript"
-    Cache-Control = "no-cache, no-store, must-revalidate"
+    Cache-Control = "no-cache, no-store, must-revalidate, max-age=0"
+    Pragma = "no-cache"
+    Expires = "0"
+    Last-Modified = "Thu, 01 Jan 1970 00:00:00 GMT"
 
-# Security headers
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Content-Type = "text/css"
+    Cache-Control = "no-cache, no-store, must-revalidate, max-age=0"
+    Pragma = "no-cache"
+    Expires = "0"
+    Last-Modified = "Thu, 01 Jan 1970 00:00:00 GMT"
+
+# Security headers (separate from cache headers)
 [[headers]]
   for = "/*"
   [headers.values]
