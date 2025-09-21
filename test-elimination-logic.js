@@ -82,15 +82,26 @@ async function testEliminationLogic() {
     const winningTeams = Array.from(teamResults.entries()).filter(([team, result]) => result === 'win');
     const drawingTeams = Array.from(teamResults.entries()).filter(([team, result]) => result === 'draw');
     
-    console.log(`   Teams that would be ELIMINATED: ${losingTeams.length}`);
-    console.log(`   Teams that would SURVIVE: ${winningTeams.length + drawingTeams.length}`);
+    // Only WINNING teams survive - draws and losses are eliminated
+    const eliminatedTeams = losingTeams.length + drawingTeams.length;
+    const survivingTeams = winningTeams.length;
     
-    if (losingTeams.length > 0) {
-      console.log(`   Example eliminated teams: ${losingTeams.slice(0, 3).map(([team]) => team).join(', ')}`);
+    console.log(`   Teams that would be ELIMINATED (lost + drew): ${eliminatedTeams}`);
+    console.log(`   Teams that would SURVIVE (won only): ${survivingTeams}`);
+    
+    if (eliminatedTeams > 0) {
+      const eliminatedTeamNames = [...losingTeams, ...drawingTeams].slice(0, 5).map(([team]) => team);
+      console.log(`   Example eliminated teams: ${eliminatedTeamNames.join(', ')}`);
+    }
+    
+    if (survivingTeams > 0) {
+      const survivingTeamNames = winningTeams.slice(0, 5).map(([team]) => team);
+      console.log(`   Example surviving teams: ${survivingTeamNames.join(', ')}`);
     }
     
     console.log('\n✅ Elimination logic test completed successfully!');
-    console.log('💡 The system will eliminate players who picked losing teams');
+    console.log('💡 The system will eliminate players who picked teams that DIDN\'T WIN (lost or drew)');
+    console.log('🏆 Only players who picked WINNING teams will survive!');
     
   } catch (error) {
     console.error('❌ Test failed:', error.message);

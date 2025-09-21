@@ -178,8 +178,8 @@ export class LiveScoreService {
           
           results.push(teamResult);
           
-          // If team lost, eliminate player
-          if (teamResult.result === 'lose') {
+          // If team didn't win (lost or drew), eliminate player
+          if (teamResult.result !== 'win') {
             const { error: eliminateError } = await supabase
               .from('room_players')
               .update({

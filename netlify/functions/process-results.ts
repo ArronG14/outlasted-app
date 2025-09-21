@@ -182,8 +182,8 @@ async function processRoomResults(roomId: string, gameweek: number) {
           })
           .eq('id', pick.id);
         
-        // If team lost, eliminate player
-        if (teamResult === 'lose') {
+        // If team didn't win (lost or drew), eliminate player
+        if (teamResult !== 'win') {
           await supabase
             .from('room_players')
             .update({
