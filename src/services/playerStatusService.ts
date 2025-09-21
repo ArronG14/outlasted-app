@@ -105,11 +105,21 @@ export class PlayerStatusService {
         displayText = 'Eliminated (No Pick)';
       }
     } else if (deadlinePassed) {
-      // Deadline passed but gameweek not finished - show pick as pending
+      // Deadline passed but gameweek not finished - check if pick result is already determined
       if (hasPick) {
-        status = 'picked'; // Changed from 'active' to 'picked' to show pending
-        teamName = pickData.team_name;
-        displayText = pickData.team_name;
+        // If pick result is already determined (win/lose/draw), show final status
+        if (pickResult === 'win') {
+          status = 'active';
+          displayText = 'Through';
+        } else if (pickResult === 'lose' || pickResult === 'draw') {
+          status = 'eliminated';
+          displayText = `Eliminated (${pickData.team_name})`;
+        } else {
+          // Pick result is still pending - show as pending
+          status = 'picked';
+          teamName = pickData.team_name;
+          displayText = pickData.team_name;
+        }
       } else {
         // Only mark as eliminated if this is the room's current gameweek
         // For new rooms, players shouldn't be penalized for not picking in previous gameweeks
