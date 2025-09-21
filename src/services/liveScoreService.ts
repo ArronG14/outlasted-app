@@ -20,30 +20,39 @@ export interface TeamResult {
 
 export class LiveScoreService {
   /**
-   * Fetch live scores from FPL API
+   * Fetch live scores from Supabase database (synced by GitHub Actions)
    */
   static async fetchLiveScores(): Promise<LiveScore[]> {
     try {
-      const response = await fetch('https://fantasy.premierleague.com/api/fixtures/');
-      if (!response.ok) {
-        throw new Error('Failed to fetch live scores from FPL API');
-      }
+      const { data: fixtures, error } = await supabase
+        .from('fixtures')
+        .select(`
+          fixture_id,
+          gw,
+          kickoff_utc,
+          home_team_id,
+          away_team_id,
+          home_score,
+          away_score,
+          status
+        `)
+        .order('fixture_id', { ascending: true });
       
-      const data = await response.json();
+      if (error) throw error;
       
-      // Transform FPL data to our format
-      return data.map((fixture: any) => ({
-        fixture_id: fixture.id,
-        home_team_id: fixture.team_h,
-        away_team_id: fixture.team_a,
-        home_score: fixture.team_h_score,
-        away_score: fixture.team_a_score,
-        status: this.mapFPLStatus(fixture.finished, fixture.started),
-        kickoff_utc: fixture.kickoff_time,
-        gameweek: fixture.event
+      // Transform database data to our format
+      return (fixtures || []).map((fixture: any) => ({
+        fixture_id: fixture.fixture_id,
+        home_team_id: fixture.home_team_id,
+        away_team_id: fixture.away_team_id,
+        home_score: fixture.home_score,
+        away_score: fixture.away_score,
+        status: fixture.status || 'scheduled',
+        kickoff_utc: fixture.kickoff_utc,
+        gameweek: fixture.gw
       }));
     } catch (error) {
-      console.error('Error fetching live scores:', error);
+      console.error('Error fetching live scores from database:', error);
       throw error;
     }
   }

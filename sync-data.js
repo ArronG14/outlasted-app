@@ -11,7 +11,7 @@ console.log('🚀 OUTLASTED - Free FPL Data Sync Starting...');
 console.log('💡 Make sure to add your SERVICE_ROLE_KEY below!');
 
 // Get service role key from environment variable (for GitHub Actions) or use placeholder
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'YOUR_SERVICE_ROLE_KEY_HERE';
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNyd2RzbXhweXBhZW95emx0bXZjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjU1MDk0MiwiZXhwIjoyMDcyMTI2OTQyfQ.-Xb6_7uzNB5tc2eeyBB70ktfOVt2FWbxMyfLqjtOK5o';
 
 if (supabaseServiceKey === 'YOUR_SERVICE_ROLE_KEY_HERE') {
   console.error('❌ Please add your Supabase SERVICE ROLE KEY to this script!');
@@ -86,7 +86,10 @@ async function syncFPLData() {
           gw: fixture.event,
           kickoff_utc: fixture.kickoff_time,
           home_team_id: fixture.team_h,
-          away_team_id: fixture.team_a
+          away_team_id: fixture.team_a,
+          home_score: fixture.team_h_score,
+          away_score: fixture.team_a_score,
+          status: fixture.finished ? 'finished' : (fixture.started ? 'live' : 'scheduled')
         })),
         { onConflict: 'fixture_id' }
       );
