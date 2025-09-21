@@ -39,11 +39,11 @@ export function LiveScores({ gameweek, roomId, onResultsUpdated }: LiveScoresPro
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'finished':
-        return <CheckCircle className="text-green-400" size={16} />;
+        return <CheckCircle className="text-green-400" size={18} />;
       case 'live':
-        return <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />;
+        return <div className="w-5 h-5 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50" />;
       default:
-        return <Clock className="text-yellow-400" size={16} />;
+        return <Clock className="text-yellow-400" size={18} />;
     }
   };
 
@@ -114,18 +114,18 @@ export function LiveScores({ gameweek, roomId, onResultsUpdated }: LiveScoresPro
           {liveScores.map((score) => (
             <div
               key={score.fixture_id}
-              className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-all"
+              className="bg-white/5 rounded-xl p-5 border border-white/10 hover:border-white/20 transition-all shadow-lg"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       {getStatusIcon(score.status)}
-                      <span className="text-white/70 text-sm font-medium">
+                      <span className="text-white/80 text-sm font-semibold">
                         {getStatusText(score.status)}
                       </span>
                     </div>
-                    <span className="text-white/60 text-sm">
+                    <span className="text-white/60 text-sm font-medium">
                       {formatKickoffTime(score.kickoff_utc)}
                     </span>
                   </div>
@@ -133,16 +133,23 @@ export function LiveScores({ gameweek, roomId, onResultsUpdated }: LiveScoresPro
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-white font-medium">{score.home_team}</span>
-                        <span className="text-white/70 text-sm">vs</span>
-                        <span className="text-white font-medium">{score.away_team}</span>
+                        <div className="text-right flex-1">
+                          <span className="text-white font-semibold text-lg">{score.home_team}</span>
+                        </div>
+                        
+                        <div className="mx-6 flex flex-col items-center">
+                          <div className="bg-white/10 rounded-lg px-4 py-2 border border-white/20">
+                            <span className="text-white font-bold text-xl">
+                              {formatScore(score.home_score, score.away_score)}
+                            </span>
+                          </div>
+                          <span className="text-white/60 text-xs mt-1">vs</span>
+                        </div>
+                        
+                        <div className="text-left flex-1">
+                          <span className="text-white font-semibold text-lg">{score.away_team}</span>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="ml-4">
-                      <span className="text-white font-bold text-lg">
-                        {formatScore(score.home_score, score.away_score)}
-                      </span>
                     </div>
                   </div>
                 </div>
@@ -154,23 +161,23 @@ export function LiveScores({ gameweek, roomId, onResultsUpdated }: LiveScoresPro
 
       {/* Gameweek Status */}
       <div className="mt-6 pt-4 border-t border-white/10">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-white/70">Gameweek Status:</span>
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between">
+          <span className="text-white/80 font-semibold">Gameweek Status:</span>
+          <div className="flex items-center gap-3">
             {liveScores.every(score => score.status === 'finished') ? (
               <>
-                <CheckCircle className="text-green-400" size={16} />
-                <span className="text-green-400 font-medium">All Games Finished</span>
+                <CheckCircle className="text-green-400" size={20} />
+                <span className="text-green-400 font-bold text-lg">All Games Finished</span>
               </>
             ) : liveScores.some(score => score.status === 'live') ? (
               <>
-                <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-red-400 font-medium">Games In Progress</span>
+                <div className="w-5 h-5 bg-red-500 rounded-full animate-pulse shadow-lg shadow-red-500/50" />
+                <span className="text-red-400 font-bold text-lg">Games In Progress</span>
               </>
             ) : (
               <>
-                <Clock className="text-yellow-400" size={16} />
-                <span className="text-yellow-400 font-medium">Games Scheduled</span>
+                <Clock className="text-yellow-400" size={20} />
+                <span className="text-yellow-400 font-bold text-lg">Games Scheduled</span>
               </>
             )}
           </div>
