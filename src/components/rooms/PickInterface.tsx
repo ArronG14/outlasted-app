@@ -57,8 +57,6 @@ export function PickInterface({ roomId, currentGameweek, onPickMade, playerStatu
     try {
       const picks = await PickService.getUserPicks(roomId);
       setUserPicks(picks);
-      // Trigger parent refresh to update player statuses
-      onPickMade();
     } catch (err) {
       console.error('Error loading picks:', err);
     }

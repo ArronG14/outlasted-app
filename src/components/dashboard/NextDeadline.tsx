@@ -5,16 +5,35 @@ import { useNextDeadline } from '../../hooks/useFPLData';
 export function NextDeadline() {
   const { deadline, loading, error } = useNextDeadline();
   const [timeLeft, setTimeLeft] = useState<string>('');
+  const [currentDeadline, setCurrentDeadline] = useState(deadline);
 
   useEffect(() => {
-    if (!deadline) return;
+    if (deadline) {
+      setCurrentDeadline(deadline);
+    }
+  }, [deadline]);
 
-    const updateCountdown = () => {
+  useEffect(() => {
+    if (!currentDeadline) return;
+
+    const updateCountdown = async () => {
       const now = new Date();
-      const deadlineTime = new Date(deadline.deadline_utc);
+      const deadlineTime = new Date(currentDeadline.deadline_utc);
       const diff = deadlineTime.getTime() - now.getTime();
 
       if (diff <= 0) {
+        // Deadline has passed, try to get the next deadline
+        try {
+          const { FPLService } = await import('../../services/fplService');
+          const nextDeadline = await FPLService.getNextDeadline();
+          if (nextDeadline && nextDeadline.gw !== currentDeadline.gw) {
+            // Update to next deadline
+            setCurrentDeadline(nextDeadline);
+            return;
+          }
+        } catch (err) {
+          console.error('Error fetching next deadline:', err);
+        }
         setTimeLeft('Deadline passed');
         return;
       }
@@ -36,7 +55,7 @@ export function NextDeadline() {
     const interval = setInterval(updateCountdown, 60000); // Update every minute
 
     return () => clearInterval(interval);
-  }, [deadline]);
+  }, [currentDeadline]);
 
   if (loading) {
     return (
@@ -78,7 +97,7 @@ export function NextDeadline() {
           {timeLeft}
         </p>
         <p className="text-[#737373] text-sm">
-          Gameweek {deadline.gw} • {new Date(deadline.deadline_utc).toLocaleDateString('en-GB', {
+          Gameweek {currentDeadline?.gw || deadline?.gw} • {new Date((currentDeadline || deadline)?.deadline_utc).toLocaleDateString('en-GB', {
             weekday: 'short',
             day: 'numeric',
             month: 'short',

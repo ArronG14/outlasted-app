@@ -19,6 +19,19 @@ export class PlayerStatusService {
     playerId: string, 
     gameweek: number
   ): Promise<PlayerStatusInfo> {
+    // Get room info to check if this is the starting gameweek
+    const { data: roomData, error: roomError } = await supabase
+      .from('rooms')
+      .select('current_gameweek, created_at')
+      .eq('id', roomId)
+      .single();
+
+    if (roomError || !roomData) {
+      throw new Error('Room not found');
+    }
+
+    const isRoomStartingGameweek = gameweek === roomData.current_gameweek;
+
     // Get gameweek info
     const { data: gameweekData, error: gwError } = await supabase
       .from('gameweeks')
@@ -36,7 +49,7 @@ export class PlayerStatusService {
     const gameweekFinished = gameweekData.is_finished;
 
     // Get player's pick for this gameweek
-    const { data: pickData, error: pickError } = await supabase
+    const { data: pickData } = await supabase
       .from('picks')
       .select('team_name, result')
       .eq('room_id', roomId)
@@ -98,8 +111,16 @@ export class PlayerStatusService {
         teamName = pickData.team_name;
         displayText = pickData.team_name;
       } else {
-        status = 'eliminated';
-        displayText = 'Eliminated (No Pick)';
+        // Only mark as eliminated if this is the room's current gameweek
+        // For new rooms, players shouldn't be penalized for not picking in previous gameweeks
+        if (isRoomStartingGameweek) {
+          status = 'eliminated';
+          displayText = 'Eliminated (No Pick)';
+        } else {
+          // This is a past gameweek that the room didn't participate in
+          status = 'awaiting_pick';
+          displayText = 'Awaiting Pick';
+        }
       }
     } else {
       // Before deadline - show pick status
@@ -154,7 +175,7 @@ export class PlayerStatusService {
         const status = await this.getPlayerStatus(roomId, player.player_id, gameweek);
         return {
           playerId: player.player_id,
-          playerName: player.profiles.display_name,
+          playerName: (player.profiles as any).display_name,
           status
         };
       })
@@ -196,8 +217,8 @@ export class PlayerStatusService {
       gameweek: pick.gameweek,
       teamName: pick.team_name,
       result: pick.result,
-      deadline: new Date(pick.gameweeks.deadline_utc),
-      isFinished: pick.gameweeks.is_finished
+      deadline: new Date((pick.gameweeks as any).deadline_utc),
+      isFinished: (pick.gameweeks as any).is_finished
     })) || [];
   }
 }

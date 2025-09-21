@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Crown, ExternalLink, Clock, Trophy } from 'lucide-react';
 import { RoomService } from '../../services/roomService';
+import { RoomStatusService, RoomStatusInfo } from '../../services/roomStatusService';
 import { useNavigate } from 'react-router-dom';
 import { useAuthSimple } from '../../hooks/useAuthSimple';
 
@@ -22,6 +23,7 @@ interface UserRoom {
 export function ActiveRooms() {
   const [ongoingRooms, setOngoingRooms] = useState<UserRoom[]>([]);
   const [upcomingRooms, setUpcomingRooms] = useState<UserRoom[]>([]);
+  const [roomStatuses, setRoomStatuses] = useState<Map<string, RoomStatusInfo>>(new Map());
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuthSimple();
@@ -35,18 +37,21 @@ export function ActiveRooms() {
       setLoading(true);
       const userRooms = await RoomService.getUserRooms();
       
-      // Separate rooms by round status
-      const ongoing = userRooms.filter(room => 
-        room.status === 'active' || 
-        room.round_1_deadline_passed ||
-        room.current_round > 1
-      );
+      // Get room statuses for all rooms
+      const roomIds = userRooms.map(room => room.id);
+      const statuses = await RoomStatusService.getMultipleRoomStatuses(roomIds);
+      setRoomStatuses(statuses);
       
-      const upcoming = userRooms.filter(room => 
-        room.status === 'waiting' && 
-        room.current_round === 1 && 
-        !room.round_1_deadline_passed
-      );
+      // Separate rooms by status
+      const ongoing = userRooms.filter(room => {
+        const status = statuses.get(room.id);
+        return status && (status.status === 'active' || !status.isJoinable);
+      });
+      
+      const upcoming = userRooms.filter(room => {
+        const status = statuses.get(room.id);
+        return status && status.isJoinable;
+      });
       
       setOngoingRooms(ongoing);
       setUpcomingRooms(upcoming);
@@ -79,14 +84,18 @@ export function ActiveRooms() {
             </span>
             <span>£{room.buy_in} buy-in</span>
             <span className={`px-2 py-1 rounded text-xs ${
-              room.status === 'waiting' ? 'bg-[#C9B037]/20 text-[#C9B037]' :
-              room.status === 'active' ? 'bg-[#00E5A0]/20 text-[#00E5A0]' :
-              'bg-[#737373]/20 text-[#737373]'
+              (() => {
+                const status = roomStatuses.get(room.id);
+                if (!status) return 'bg-[#737373]/20 text-[#737373]';
+                return status.status === 'waiting' ? 'bg-[#C9B037]/20 text-[#C9B037]' :
+                       status.status === 'active' ? 'bg-[#00E5A0]/20 text-[#00E5A0]' :
+                       'bg-[#737373]/20 text-[#737373]';
+              })()
             }`}>
-              {room.status === 'waiting' && !room.round_1_deadline_passed ? 'Round 1 Picks' :
-               room.status === 'waiting' ? `Round ${room.current_round} Picks` :
-               room.status === 'active' ? `Round ${room.current_round} Active` :
-               room.status.toUpperCase()}
+              {(() => {
+                const status = roomStatuses.get(room.id);
+                return status ? status.displayText : 'Loading...';
+              })()}
             </span>
           </div>
         </div>

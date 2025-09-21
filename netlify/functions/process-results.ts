@@ -38,23 +38,40 @@ export const handler: Handler = async (event, context) => {
           // Process results for this room
           const eliminationResult = await processRoomResults(room.id, room.current_gameweek);
           
-          // Check if game should advance to next gameweek
-          if (eliminationResult.remaining_active > 1) {
+          // Check if all players were eliminated in this round
+          if (eliminationResult.remaining_active === 0) {
+            // All players eliminated - reactivate them and advance to next gameweek
+            await reactivatePlayersAndAdvance(room.id, room.current_gameweek);
+            results.push({
+              room_id: room.id,
+              gameweek: room.current_gameweek,
+              eliminated: eliminationResult.eliminated_count,
+              remaining: eliminationResult.remaining_active,
+              action: 'players_reactivated_and_advanced'
+            });
+          } else if (eliminationResult.remaining_active > 1) {
             await advanceToNextGameweek(room.id);
+            results.push({
+              room_id: room.id,
+              gameweek: room.current_gameweek,
+              eliminated: eliminationResult.eliminated_count,
+              remaining: eliminationResult.remaining_active,
+              action: 'advanced_to_next_round'
+            });
           } else {
             // Game complete - mark as completed
             await supabase
               .from('rooms')
               .update({ status: 'completed' })
               .eq('id', room.id);
+            results.push({
+              room_id: room.id,
+              gameweek: room.current_gameweek,
+              eliminated: eliminationResult.eliminated_count,
+              remaining: eliminationResult.remaining_active,
+              action: 'game_completed'
+            });
           }
-          
-          results.push({
-            room_id: room.id,
-            gameweek: room.current_gameweek,
-            eliminated: eliminationResult.eliminated_count,
-            remaining: eliminationResult.remaining_active
-          });
         }
       } catch (error) {
         console.error(`Error processing room ${room.id}:`, error);
@@ -228,6 +245,93 @@ async function advanceToNextGameweek(roomId: string) {
     }
   } catch (error) {
     console.error('Error advancing gameweek:', error);
+    throw error;
+  }
+}
+
+async function reactivatePlayersAndAdvance(roomId: string, gameweek: number) {
+  try {
+    console.log(`Reactivating all players for room ${roomId}, gameweek ${gameweek}`);
+    
+    // Get all players who were eliminated in this gameweek
+    const { data: eliminatedPlayers, error: eliminatedError } = await supabase
+      .from('room_players')
+      .select('player_id')
+      .eq('room_id', roomId)
+      .eq('eliminated_gameweek', gameweek)
+      .eq('status', 'eliminated');
+    
+    if (eliminatedError) throw eliminatedError;
+    
+    if (!eliminatedPlayers || eliminatedPlayers.length === 0) {
+      console.log('No eliminated players found for reactivation');
+      return;
+    }
+    
+    // Reactivate all players who were eliminated in this gameweek
+    const playerIds = eliminatedPlayers.map(p => p.player_id);
+    const { error: reactivateError } = await supabase
+      .from('room_players')
+      .update({
+        status: 'active',
+        eliminated_at: null,
+        eliminated_gameweek: null
+      })
+      .eq('room_id', roomId)
+      .in('player_id', playerIds);
+    
+    if (reactivateError) throw reactivateError;
+    
+    // Update room player count
+    const { data: allPlayers } = await supabase
+      .from('room_players')
+      .select('id')
+      .eq('room_id', roomId)
+      .eq('status', 'active');
+    
+    // Advance to next gameweek (same logic as normal advancement)
+    const { data: room } = await supabase
+      .from('rooms')
+      .select('current_gameweek, current_round')
+      .eq('id', roomId)
+      .single();
+    
+    if (!room) return;
+    
+    // Find next available gameweek
+    const { data: nextGameweek } = await supabase
+      .from('gameweeks')
+      .select('gw')
+      .gt('gw', room.current_gameweek)
+      .eq('is_finished', false)
+      .order('gw', { ascending: true })
+      .limit(1);
+    
+    if (nextGameweek && nextGameweek.length > 0) {
+      // Advance to next round and gameweek
+      await supabase
+        .from('rooms')
+        .update({ 
+          current_round: room.current_round + 1,
+          current_gameweek: nextGameweek[0].gw,
+          current_players: allPlayers?.length || 0,
+          status: 'active'
+        })
+        .eq('id', roomId);
+    } else {
+      // No more gameweeks - game is complete
+      await supabase
+        .from('rooms')
+        .update({ 
+          status: 'completed',
+          current_players: allPlayers?.length || 0
+        })
+        .eq('id', roomId);
+    }
+    
+    console.log(`Players reactivated and advanced: ${eliminatedPlayers.length} players reactivated`);
+  } catch (error) {
+    console.error('Error reactivating players and advancing:', error);
     throw error;
   }
 }

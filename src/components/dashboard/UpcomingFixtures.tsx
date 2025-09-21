@@ -4,7 +4,7 @@ import { useUpcomingFixtures } from '../../hooks/useFPLData';
 import { useNavigate } from 'react-router-dom';
 
 export function UpcomingFixtures() {
-  const { fixtures, loading, error } = useUpcomingFixtures(4);
+  const { fixtures, loading, error } = useUpcomingFixtures(6);
   const navigate = useNavigate();
 
   if (loading) {
@@ -34,7 +34,7 @@ export function UpcomingFixtures() {
           <h3 className="text-lg font-semibold text-[#F8F8F6]">Upcoming Fixtures</h3>
         </div>
         <p className="text-[#737373]">
-          {error ? 'Unable to load fixtures' : 'No upcoming fixtures'}
+          {error ? `Error: ${error}` : 'No upcoming fixtures found'}
         </p>
       </div>
     );

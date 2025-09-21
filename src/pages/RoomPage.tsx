@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, DollarSign, Copy, Crown, Settings, CheckCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Copy, Crown, RefreshCw } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { GameweekFixtures } from '../components/rooms/GameweekFixtures';
 import { PickInterface } from '../components/rooms/PickInterface';
@@ -8,12 +8,12 @@ import { DealSystem } from '../components/rooms/DealSystem';
 import { WinnerCelebration } from '../components/rooms/WinnerCelebration';
 import { LiveScores } from '../components/rooms/LiveScores';
 import { RematchSystem } from '../components/rooms/RematchSystem';
+import { AllPlayersEliminatedNotification } from '../components/rooms/AllPlayersEliminatedNotification';
 import { RoomDebug } from '../components/debug/RoomDebug';
 import { RoomService } from '../services/roomService';
 import { GameStateService } from '../services/gameStateService';
-import { EliminationService } from '../services/eliminationService';
-import { LiveScoreService } from '../services/liveScoreService';
 import { PlayerStatusService } from '../services/playerStatusService';
+import { RoomStatusService } from '../services/roomStatusService';
 import { PlayerProfile } from '../components/rooms/PlayerProfile';
 import { useAuthSimple } from '../hooks/useAuthSimple';
 
@@ -28,13 +28,16 @@ interface RoomDetails {
   invite_code: string;
   host_id: string;
   current_gameweek: number;
+  current_round: number;
   status: 'waiting' | 'active' | 'completed';
+  deal_threshold: number;
   created_at: string;
   profiles: {
     display_name: string;
   };
   room_players: Array<{
     id: string;
+    player_id: string;
     status: string;
     joined_at: string;
     profiles: {
@@ -61,6 +64,9 @@ export function RoomPage() {
   const [showWinnerCelebration, setShowWinnerCelebration] = useState(false);
   const [winner, setWinner] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [roomStatus, setRoomStatus] = useState<any>(null);
+  const [showAllEliminatedNotification, setShowAllEliminatedNotification] = useState(false);
+  const [allEliminatedData, setAllEliminatedData] = useState<{gameweek: number, eliminatedCount: number} | null>(null);
 
   useEffect(() => {
     console.log('RoomPage mounted with ID:', id);
@@ -101,9 +107,10 @@ export function RoomPage() {
       console.log('Room data loaded:', roomData);
       setRoom(roomData);
       
-      // Load player statuses for current gameweek
+      // Load player statuses and room status for current gameweek
       if (roomData) {
         await loadPlayerStatuses(roomData.current_gameweek);
+        await loadRoomStatus(roomData.id);
       }
     } catch (err) {
       console.error('Error loading room details:', err);
@@ -124,6 +131,15 @@ export function RoomPage() {
     }
   };
 
+  const loadRoomStatus = async (roomId: string) => {
+    try {
+      const status = await RoomStatusService.getRoomStatus(roomId);
+      setRoomStatus(status);
+    } catch (err) {
+      console.error('Error loading room status:', err);
+    }
+  };
+
   const refreshAllData = async () => {
     if (!id) return;
     
@@ -135,7 +151,14 @@ export function RoomPage() {
       
       if (roomData) {
         await loadPlayerStatuses(roomData.current_gameweek);
+        await loadRoomStatus(roomData.id);
         await loadGameState();
+        
+        // Check if all players were eliminated in the previous gameweek
+        // This would be detected by the backend and we can show the notification
+        // For now, we'll add a simple check - in a real implementation, 
+        // this would be triggered by a WebSocket or polling mechanism
+        checkForAllPlayersEliminated(roomData);
       }
     } catch (err) {
       console.error('Error refreshing data:', err);
@@ -144,11 +167,35 @@ export function RoomPage() {
     }
   };
 
+  const checkForAllPlayersEliminated = (roomData: RoomDetails) => {
+    // This is a placeholder - in a real implementation, you would:
+    // 1. Check if the room just had all players eliminated
+    // 2. This could be done via a WebSocket event or by checking room history
+    // 3. For now, we'll simulate this check
+    
+    // Example: If you want to test this, you could add a button or trigger
+    // that sets the notification state manually
+  };
+
+  // Test function to manually trigger the all players eliminated notification
+  const testAllPlayersEliminated = () => {
+    setAllEliminatedData({
+      gameweek: room?.current_gameweek || 1,
+      eliminatedCount: room?.current_players || 3
+    });
+    setShowAllEliminatedNotification(true);
+  };
+
   const getCurrentUserStatus = () => {
-    if (!user || !room) return 'active';
+    if (!user || !room) return 'active' as const;
     
     const currentPlayer = room.room_players.find(p => p.player_id === user.id);
-    return currentPlayer?.status || 'active';
+    const status = currentPlayer?.status || 'active';
+    
+    // Ensure the status is one of the expected values
+    if (status === 'eliminated') return 'eliminated' as const;
+    if (status === 'active') return 'active' as const;
+    return 'pending_pick' as const;
   };
 
   const loadGameState = async () => {
@@ -316,6 +363,16 @@ export function RoomPage() {
         {/* Debug Component - Remove this after fixing */}
         <RoomDebug roomId={room.id} />
         
+        {/* Test Button for All Players Eliminated - Remove in production */}
+        <div className="mb-4">
+          <Button
+            onClick={testAllPlayersEliminated}
+            className="bg-orange-500 text-white hover:bg-orange-400"
+          >
+            Test All Players Eliminated Notification
+          </Button>
+        </div>
+        
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Room Info */}
           <div className="lg:col-span-1 space-y-6">
@@ -326,11 +383,11 @@ export function RoomPage() {
                 <div className="flex justify-between">
                   <span className="text-[#D4D4D4]">Status:</span>
                   <span className={`font-medium ${
-                    room.status === 'waiting' ? 'text-yellow-400' :
-                    room.status === 'active' ? 'text-green-400' :
+                    roomStatus?.status === 'waiting' ? 'text-yellow-400' :
+                    roomStatus?.status === 'active' ? 'text-green-400' :
                     'text-blue-400'
                   }`}>
-                    {room.status.charAt(0).toUpperCase() + room.status.slice(1)}
+                    {roomStatus?.displayText || 'Loading...'}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -414,7 +471,7 @@ export function RoomPage() {
                 roomId={room.id}
                 currentGameweek={room.current_gameweek}
                 activePlayers={gameState.active_players}
-                dealThreshold={room.deal_threshold || 2}
+                dealThreshold={room.deal_threshold}
                 onDealAccepted={handleDealAccepted}
               />
             )}
@@ -479,11 +536,26 @@ export function RoomPage() {
         </div>
       </div>
 
+      {/* All Players Eliminated Notification */}
+      {showAllEliminatedNotification && allEliminatedData && (
+        <AllPlayersEliminatedNotification
+          gameweek={allEliminatedData.gameweek}
+          eliminatedCount={allEliminatedData.eliminatedCount}
+          onDismiss={() => {
+            setShowAllEliminatedNotification(false);
+            setAllEliminatedData(null);
+            refreshAllData(); // Refresh to show updated room state
+          }}
+        />
+      )}
+
       {/* Winner Celebration Modal */}
       {showWinnerCelebration && winner && (
         <WinnerCelebration
-          winner={winner}
+          winnerName={winner.profiles?.display_name || 'Winner'}
           prizeAmount={room.buy_in * room.current_players}
+          totalPlayers={room.current_players}
+          gameweeksSurvived={room.current_round || 1}
           onRematch={handleRematch}
           onLeave={handleLeaveRoom}
         />
