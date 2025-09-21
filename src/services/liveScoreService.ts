@@ -4,6 +4,8 @@ export interface LiveScore {
   fixture_id: number;
   home_team_id: number;
   away_team_id: number;
+  home_team: string;
+  away_team: string;
   home_score: number | null;
   away_score: number | null;
   status: 'scheduled' | 'live' | 'finished';
@@ -40,11 +42,20 @@ export class LiveScoreService {
       
       if (error) throw error;
       
+      // Get team names
+      const { data: teams } = await supabase
+        .from('pl_teams')
+        .select('team_id, name');
+      
+      const teamMap = new Map(teams?.map(t => [t.team_id, t.name]) || []);
+      
       // Transform database data to our format
       return (fixtures || []).map((fixture: any) => ({
         fixture_id: fixture.fixture_id,
         home_team_id: fixture.home_team_id,
         away_team_id: fixture.away_team_id,
+        home_team: teamMap.get(fixture.home_team_id) || 'Unknown',
+        away_team: teamMap.get(fixture.away_team_id) || 'Unknown',
         home_score: fixture.home_score,
         away_score: fixture.away_score,
         status: fixture.status || 'scheduled',
