@@ -2,8 +2,8 @@ import { supabase } from '../lib/supabase';
 
 export interface LiveScore {
   fixture_id: number;
-  home_team: string;
-  away_team: string;
+  home_team_id: number;
+  away_team_id: number;
   home_score: number | null;
   away_score: number | null;
   status: 'scheduled' | 'live' | 'finished';
@@ -34,8 +34,8 @@ export class LiveScoreService {
       // Transform FPL data to our format
       return data.map((fixture: any) => ({
         fixture_id: fixture.id,
-        home_team: fixture.team_h,
-        away_team: fixture.team_a,
+        home_team_id: fixture.team_h,
+        away_team_id: fixture.team_a,
         home_score: fixture.team_h_score,
         away_score: fixture.team_a_score,
         status: this.mapFPLStatus(fixture.finished, fixture.started),
@@ -64,27 +64,39 @@ export class LiveScoreService {
     const liveScores = await this.fetchLiveScores();
     const gameweekFixtures = liveScores.filter(score => score.gameweek === gameweek);
     
+    // Get team names from database
+    const { data: teams } = await supabase
+      .from('pl_teams')
+      .select('team_id, name');
+    
+    const teamMap = new Map(teams?.map(t => [t.team_id, t.name]) || []);
+    
     const results: TeamResult[] = [];
     
     for (const fixture of gameweekFixtures) {
       if (fixture.status === 'finished' && fixture.home_score !== null && fixture.away_score !== null) {
-        // Home team result
-        const homeResult = this.determineResult(fixture.home_score, fixture.away_score);
-        results.push({
-          team_name: fixture.home_team,
-          result: homeResult,
-          score: `${fixture.home_score}-${fixture.away_score}`,
-          opponent: fixture.away_team
-        });
+        const homeTeamName = teamMap.get(fixture.home_team_id);
+        const awayTeamName = teamMap.get(fixture.away_team_id);
         
-        // Away team result
-        const awayResult = this.determineResult(fixture.away_score, fixture.home_score);
-        results.push({
-          team_name: fixture.away_team,
-          result: awayResult,
-          score: `${fixture.away_score}-${fixture.home_score}`,
-          opponent: fixture.home_team
-        });
+        if (homeTeamName && awayTeamName) {
+          // Home team result
+          const homeResult = this.determineResult(fixture.home_score, fixture.away_score);
+          results.push({
+            team_name: homeTeamName,
+            result: homeResult,
+            score: `${fixture.home_score}-${fixture.away_score}`,
+            opponent: awayTeamName
+          });
+          
+          // Away team result
+          const awayResult = this.determineResult(fixture.away_score, fixture.home_score);
+          results.push({
+            team_name: awayTeamName,
+            result: awayResult,
+            score: `${fixture.away_score}-${fixture.home_score}`,
+            opponent: homeTeamName
+          });
+        }
       }
     }
     
