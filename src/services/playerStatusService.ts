@@ -13,6 +13,7 @@ export interface PlayerStatusInfo {
 export class PlayerStatusService {
   /**
    * Get comprehensive player status for a specific gameweek
+   * If the gameweek is finished, returns status for the next gameweek
    */
   static async getPlayerStatus(
     roomId: string, 
@@ -92,13 +93,13 @@ export class PlayerStatusService {
         teamName = pickData.team_name;
         if (pickResult === 'win') {
           status = 'active';
-          displayText = 'Through'; // Changed to show "Through" for winners
+          displayText = `${pickData.team_name} (Win)`;
         } else if (pickResult === 'lose') {
           status = 'eliminated';
-          displayText = `Eliminated (${pickData.team_name})`;
+          displayText = `${pickData.team_name} (Eliminated)`;
         } else {
           status = 'eliminated'; // Draws are also eliminated
-          displayText = `Eliminated (${pickData.team_name})`;
+          displayText = `${pickData.team_name} (Eliminated)`;
         }
       } else {
         status = 'eliminated';
@@ -110,15 +111,15 @@ export class PlayerStatusService {
         // If pick result is already determined (win/lose/draw), show final status
         if (pickResult === 'win') {
           status = 'active';
-          displayText = 'Through';
+          displayText = `${pickData.team_name} (Win)`;
         } else if (pickResult === 'lose' || pickResult === 'draw') {
           status = 'eliminated';
-          displayText = `Eliminated (${pickData.team_name})`;
+          displayText = `${pickData.team_name} (Eliminated)`;
         } else {
           // Pick result is still pending - show as pending
           status = 'picked';
           teamName = pickData.team_name;
-          displayText = pickData.team_name;
+          displayText = `${pickData.team_name} (Pending)`;
         }
       } else {
         // Only mark as eliminated if this is the room's current gameweek
@@ -196,6 +197,7 @@ export class PlayerStatusService {
 
   /**
    * Get player's historic picks for a room
+   * Only shows picks from gameweeks that have finished
    */
   static async getPlayerHistoricPicks(
     roomId: string, 
@@ -217,6 +219,7 @@ export class PlayerStatusService {
       `)
       .eq('room_id', roomId)
       .eq('player_id', playerId)
+      .eq('gameweeks.is_finished', true) // Only show picks from finished gameweeks
       .order('gameweek', { ascending: true });
 
     if (error) {
@@ -228,7 +231,7 @@ export class PlayerStatusService {
       teamName: pick.team_name,
       result: pick.result,
       deadline: new Date((pick.gameweeks as any).deadline_utc),
-      isFinished: (pick.gameweeks as any).is_finished
+      isFinished: true // All historic picks are from finished gameweeks
     })) || [];
   }
 }

@@ -80,32 +80,7 @@ export function PlayerProfile({
     }
   };
 
-  const getStatusDisplayText = (playerStatus: {
-    status: 'awaiting_pick' | 'picked' | 'active' | 'eliminated';
-    displayText: string;
-    teamName?: string;
-  }) => {
-    switch (playerStatus.status) {
-      case 'active':
-        // If they have a team name and are active, they're through
-        if (playerStatus.teamName) {
-          return 'Through';
-        }
-        return playerStatus.displayText;
-      case 'picked':
-        // If they have a team name, show the team (pending result)
-        if (playerStatus.teamName) {
-          return playerStatus.teamName;
-        }
-        return playerStatus.displayText;
-      case 'eliminated':
-        return playerStatus.displayText;
-      case 'awaiting_pick':
-        return playerStatus.displayText;
-      default:
-        return playerStatus.displayText;
-    }
-  };
+  // No longer needed - displayText is now handled in PlayerStatusService
 
   const getResultIcon = (result: string) => {
     switch (result) {
@@ -159,7 +134,7 @@ export function PlayerProfile({
         
         <div className="flex items-center gap-2">
           <span className={`text-xs px-2 py-1 rounded ${getStatusColor(playerStatus.status, playerStatus.teamName)}`}>
-            {getStatusDisplayText(playerStatus)}
+            {playerStatus.displayText}
           </span>
           {isExpanded ? (
             <ChevronUp className="text-[#737373]" size={16} />
