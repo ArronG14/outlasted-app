@@ -67,19 +67,33 @@ export class FPLService {
    * Get the next deadline (current or next gameweek)
    */
   static async getNextDeadline(): Promise<NextDeadline | null> {
+    const now = new Date();
+    
     const { data, error } = await supabase
-      .from('gameweeks') // Fixed: was 'fpl_gameweeks', now 'gameweeks'
+      .from('gameweeks')
       .select('gw, deadline_utc')
-      .or('is_current.eq.true,is_next.eq.true')
       .eq('is_finished', false)
+      .gt('deadline_utc', now.toISOString())
       .order('gw', { ascending: true })
       .limit(1)
       .single();
 
     if (error) {
       if (error.code === 'PGRST116') {
-        // No data found
-        return null;
+        // No upcoming deadlines found, try to get the next gameweek anyway
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('gameweeks')
+          .select('gw, deadline_utc')
+          .eq('is_finished', false)
+          .order('gw', { ascending: true })
+          .limit(1)
+          .single();
+        
+        if (fallbackError) {
+          console.error('Error fetching next deadline:', fallbackError);
+          return null;
+        }
+        return fallbackData;
       }
       console.error('Error fetching next deadline:', error);
       throw new Error('Failed to fetch next deadline');
@@ -89,11 +103,28 @@ export class FPLService {
   }
 
   /**
-   * Get current gameweek
+   * Get current gameweek (the one that's currently active/ongoing)
    */
   static async getCurrentGameweek(): Promise<Gameweek | null> {
+    const now = new Date();
+    
+    // First try to find a gameweek that's currently active (deadline passed but not finished)
+    const { data: activeData, error: activeError } = await supabase
+      .from('gameweeks')
+      .select('*')
+      .eq('is_finished', false)
+      .lt('deadline_utc', now.toISOString())
+      .order('gw', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (activeData) {
+      return activeData;
+    }
+
+    // If no active gameweek, try the is_current flag
     const { data, error } = await supabase
-      .from('gameweeks') // Fixed: was 'fpl_gameweeks', now 'gameweeks'
+      .from('gameweeks')
       .select('*')
       .eq('is_current', true)
       .single();
@@ -105,6 +136,32 @@ export class FPLService {
       }
       console.error('Error fetching current gameweek:', error);
       throw new Error('Failed to fetch current gameweek');
+    }
+
+    return data;
+  }
+
+  /**
+   * Get current ongoing gameweek (deadline passed but not finished)
+   */
+  static async getCurrentOngoingGameweek(): Promise<Gameweek | null> {
+    const now = new Date();
+    
+    const { data, error } = await supabase
+      .from('gameweeks')
+      .select('*')
+      .eq('is_finished', false)
+      .lt('deadline_utc', now.toISOString())
+      .order('gw', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      console.error('Error fetching current ongoing gameweek:', error);
+      throw new Error('Failed to fetch current ongoing gameweek');
     }
 
     return data;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, Radio } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ViewFixtures } from '../components/fixtures/ViewFixtures';
 import { FPLService } from '../services/fplService';
@@ -8,6 +8,8 @@ import { Gameweek } from '../types/fpl';
 export function FixturesPage() {
   const [currentGameweek, setCurrentGameweek] = useState<number>(1);
   const [availableGameweeks, setAvailableGameweeks] = useState<Gameweek[]>([]);
+  const [currentOngoingGameweek, setCurrentOngoingGameweek] = useState<Gameweek | null>(null);
+  const [nextDeadline, setNextDeadline] = useState<Gameweek | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,12 +19,24 @@ export function FixturesPage() {
         setLoading(true);
         setError(null);
         
-        // Get all upcoming gameweeks
-        const gameweeks = await FPLService.listUpcomingGameweeks();
+        // Get all gameweeks
+        const gameweeks = await FPLService.getGameweeks();
         setAvailableGameweeks(gameweeks);
         
-        // Set current gameweek to the first available one
-        if (gameweeks.length > 0) {
+        // Get current ongoing gameweek
+        const ongoing = await FPLService.getCurrentOngoingGameweek();
+        setCurrentOngoingGameweek(ongoing);
+        
+        // Get next deadline
+        const next = await FPLService.getNextDeadline();
+        setNextDeadline(next);
+        
+        // Set current gameweek to ongoing if available, otherwise next deadline
+        if (ongoing) {
+          setCurrentGameweek(ongoing.gw);
+        } else if (next) {
+          setCurrentGameweek(next.gw);
+        } else if (gameweeks.length > 0) {
           setCurrentGameweek(gameweeks[0].gw);
         }
       } catch (err) {
@@ -167,19 +181,25 @@ export function FixturesPage() {
 
           {/* Gameweek Status Indicators */}
           <div className="flex gap-4 text-sm">
-            {currentGwData?.is_current && (
-              <span className="px-3 py-1 bg-[#00E5A0]/20 text-[#00E5A0] rounded-full">
-                Current Gameweek
+            {currentOngoingGameweek && currentGameweek === currentOngoingGameweek.gw && (
+              <span className="px-3 py-1 bg-[#EE6C4D]/20 text-[#EE6C4D] rounded-full flex items-center gap-1">
+                <Radio className="animate-pulse" size={12} />
+                Currently Ongoing
               </span>
             )}
-            {currentGwData?.is_next && (
+            {nextDeadline && currentGameweek === nextDeadline.gw && !currentOngoingGameweek && (
               <span className="px-3 py-1 bg-[#3D5A80]/20 text-[#3D5A80] rounded-full">
-                Next Gameweek
+                Next Deadline
               </span>
             )}
             {currentGwData?.is_finished && (
               <span className="px-3 py-1 bg-[#737373]/20 text-[#737373] rounded-full">
                 Finished
+              </span>
+            )}
+            {!currentOngoingGameweek && !nextDeadline && (
+              <span className="px-3 py-1 bg-[#C9B037]/20 text-[#C9B037] rounded-full">
+                Upcoming
               </span>
             )}
           </div>

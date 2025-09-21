@@ -57,6 +57,23 @@ export function NextDeadline() {
     return () => clearInterval(interval);
   }, [currentDeadline]);
 
+  // Auto-refresh the deadline every 5 minutes to catch new gameweeks
+  useEffect(() => {
+    const refreshInterval = setInterval(async () => {
+      try {
+        const { FPLService } = await import('../../services/fplService');
+        const nextDeadline = await FPLService.getNextDeadline();
+        if (nextDeadline && (!currentDeadline || nextDeadline.gw !== currentDeadline.gw)) {
+          setCurrentDeadline(nextDeadline);
+        }
+      } catch (err) {
+        console.error('Error refreshing deadline:', err);
+      }
+    }, 300000); // 5 minutes
+
+    return () => clearInterval(refreshInterval);
+  }, [currentDeadline]);
+
   if (loading) {
     return (
       <div className="bg-[#262626] p-6 rounded-xl">
