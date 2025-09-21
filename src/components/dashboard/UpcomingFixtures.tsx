@@ -55,28 +55,55 @@ export function UpcomingFixtures() {
           <ExternalLink size={16} />
         </button>
       </div>
-      <div className="space-y-3">
-        {fixtures.map((fixture) => (
-          <div key={fixture.fixture_id} className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-[#F8F8F6] font-medium">
-                {fixture.home_team?.short_name || 'TBD'}
-              </span>
-              <span className="text-[#737373]">vs</span>
-              <span className="text-[#F8F8F6] font-medium">
-                {fixture.away_team?.short_name || 'TBD'}
-              </span>
+      <div className="space-y-2">
+        {fixtures.slice(0, 3).map((fixture) => {
+          const kickoffDate = new Date(fixture.kickoff_utc);
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          
+          const fixtureDate = new Date(kickoffDate.getFullYear(), kickoffDate.getMonth(), kickoffDate.getDate());
+          
+          let dayText = '';
+          if (fixtureDate.getTime() === today.getTime()) {
+            dayText = 'Today';
+          } else if (fixtureDate.getTime() === tomorrow.getTime()) {
+            dayText = 'Tomorrow';
+          } else {
+            dayText = kickoffDate.toLocaleDateString('en-GB', { weekday: 'short' });
+          }
+          
+          return (
+            <div key={fixture.fixture_id} className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-[#F8F8F6] font-medium">
+                  {fixture.home_team?.short_name || 'TBD'}
+                </span>
+                <span className="text-[#737373]">vs</span>
+                <span className="text-[#F8F8F6] font-medium">
+                  {fixture.away_team?.short_name || 'TBD'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs px-2 py-1 rounded ${
+                  dayText === 'Today' ? 'bg-[#EE6C4D]/20 text-[#EE6C4D]' :
+                  dayText === 'Tomorrow' ? 'bg-[#3D5A80]/20 text-[#3D5A80]' :
+                  'bg-[#737373]/20 text-[#737373]'
+                }`}>
+                  {dayText}
+                </span>
+                <span className="text-[#737373] text-xs">
+                  {kickoffDate.toLocaleTimeString('en-GB', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'Europe/London'
+                  })}
+                </span>
+              </div>
             </div>
-            <span className="text-[#737373] text-sm">
-              {new Date(fixture.kickoff_utc).toLocaleDateString('en-GB', {
-                weekday: 'short',
-                hour: '2-digit',
-                minute: '2-digit',
-                timeZone: 'Europe/London'
-              })}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
