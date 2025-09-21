@@ -92,22 +92,22 @@ export class PlayerStatusService {
         teamName = pickData.team_name;
         if (pickResult === 'win') {
           status = 'active';
-          displayText = `Active (${pickData.team_name})`;
+          displayText = 'Through'; // Changed to show "Through" for winners
         } else if (pickResult === 'lose') {
           status = 'eliminated';
           displayText = `Eliminated (${pickData.team_name})`;
         } else {
-          status = 'active';
-          displayText = `Active (${pickData.team_name})`;
+          status = 'eliminated'; // Draws are also eliminated
+          displayText = `Eliminated (${pickData.team_name})`;
         }
       } else {
         status = 'eliminated';
         displayText = 'Eliminated (No Pick)';
       }
     } else if (deadlinePassed) {
-      // Deadline passed but gameweek not finished - show pick
+      // Deadline passed but gameweek not finished - show pick as pending
       if (hasPick) {
-        status = 'active';
+        status = 'picked'; // Changed from 'active' to 'picked' to show pending
         teamName = pickData.team_name;
         displayText = pickData.team_name;
       } else {

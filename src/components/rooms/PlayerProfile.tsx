@@ -57,18 +57,53 @@ export function PlayerProfile({
     loadHistoricPicks();
   }, [isExpanded, roomId, playerId]);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string, teamName?: string) => {
     switch (status) {
       case 'active':
+        // If they have a team name, they're through to next round
+        if (teamName) {
+          return 'bg-green-500/20 text-green-400';
+        }
         return 'bg-green-500/20 text-green-400';
       case 'eliminated':
         return 'bg-red-500/20 text-red-400';
       case 'picked':
+        // Check if this is a pending result (game hasn't finished yet)
+        if (teamName) {
+          return 'bg-orange-500/20 text-orange-400';
+        }
         return 'bg-blue-500/20 text-blue-400';
       case 'awaiting_pick':
         return 'bg-yellow-500/20 text-yellow-400';
       default:
         return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
+  const getStatusDisplayText = (playerStatus: {
+    status: 'awaiting_pick' | 'picked' | 'active' | 'eliminated';
+    displayText: string;
+    teamName?: string;
+  }) => {
+    switch (playerStatus.status) {
+      case 'active':
+        // If they have a team name and are active, they're through
+        if (playerStatus.teamName) {
+          return 'Through';
+        }
+        return playerStatus.displayText;
+      case 'picked':
+        // If they have a team name, show the team (pending result)
+        if (playerStatus.teamName) {
+          return playerStatus.teamName;
+        }
+        return playerStatus.displayText;
+      case 'eliminated':
+        return playerStatus.displayText;
+      case 'awaiting_pick':
+        return playerStatus.displayText;
+      default:
+        return playerStatus.displayText;
     }
   };
 
@@ -123,8 +158,8 @@ export function PlayerProfile({
         </div>
         
         <div className="flex items-center gap-2">
-          <span className={`text-xs px-2 py-1 rounded ${getStatusColor(playerStatus.status)}`}>
-            {playerStatus.displayText}
+          <span className={`text-xs px-2 py-1 rounded ${getStatusColor(playerStatus.status, playerStatus.teamName)}`}>
+            {getStatusDisplayText(playerStatus)}
           </span>
           {isExpanded ? (
             <ChevronUp className="text-[#737373]" size={16} />
