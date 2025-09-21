@@ -81,16 +81,38 @@ async function syncFPLData() {
     const { error: fixturesError } = await supabase
       .from('fixtures')
       .upsert(
-        validFixtures.map(fixture => ({
-          fixture_id: fixture.id,
-          gw: fixture.event,
-          kickoff_utc: fixture.kickoff_time,
-          home_team_id: fixture.team_h,
-          away_team_id: fixture.team_a,
-          home_score: fixture.team_h_score,
-          away_score: fixture.team_a_score,
-          status: fixture.finished ? 'finished' : (fixture.started ? 'live' : 'scheduled')
-        })),
+        validFixtures.map(fixture => {
+          // More robust status detection
+          let status = 'scheduled';
+          
+          if (fixture.finished) {
+            status = 'finished';
+          } else {
+            // Check if match should be finished based on time (matches typically last ~2 hours)
+            const kickoff = new Date(fixture.kickoff_time);
+            const now = new Date();
+            const timeDiff = now - kickoff;
+            const hoursSinceKickoff = timeDiff / (1000 * 60 * 60);
+            
+            // If more than 3 hours have passed since kickoff, consider it finished
+            if (hoursSinceKickoff > 3) {
+              status = 'finished';
+            } else if (fixture.started || hoursSinceKickoff > 0) {
+              status = 'live';
+            }
+          }
+          
+          return {
+            fixture_id: fixture.id,
+            gw: fixture.event,
+            kickoff_utc: fixture.kickoff_time,
+            home_team_id: fixture.team_h,
+            away_team_id: fixture.team_a,
+            home_score: fixture.team_h_score,
+            away_score: fixture.team_a_score,
+            status: status
+          };
+        }),
         { onConflict: 'fixture_id' }
       );
     
