@@ -1,48 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Radio } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, Clock, Radio } from 'lucide-react';
 import { useGameweekFixtures } from '../../hooks/useFPLData';
+import { LiveScoreService, LiveScore } from '../../services/liveScoreService';
 
 interface ViewFixturesProps {
   gameweek: number;
 }
 
-interface LiveFixture {
-  id: number;
-  event: number;
-  finished: boolean;
-  kickoff_time: string;
-  team_h: number;
-  team_a: number;
-  team_h_score: number | null;
-  team_a_score: number | null;
-  started: boolean;
-  minutes: number;
-  team_h_difficulty: number;
-  team_a_difficulty: number;
-}
 
 export function ViewFixtures({ gameweek }: ViewFixturesProps) {
   const { fixtures, loading, error } = useGameweekFixtures(gameweek);
-  const [liveFixtures, setLiveFixtures] = useState<LiveFixture[]>([]);
-  const [liveLoading, setLiveLoading] = useState(false);
+  const [liveFixtures, setLiveFixtures] = useState<LiveScore[]>([]);
 
   // Fetch live scores from FPL API
   useEffect(() => {
     const fetchLiveScores = async () => {
       if (!gameweek) return;
       
-      setLiveLoading(true);
       try {
-        const response = await fetch('https://fantasy.premierleague.com/api/fixtures/');
-        const data = await response.json();
+        const scores = await LiveScoreService.fetchLiveScores();
         
         // Filter fixtures for this gameweek
-        const gameweekFixtures = data.filter((fixture: LiveFixture) => fixture.event === gameweek);
-        setLiveFixtures(gameweekFixtures);
+        const gameweekScores = scores.filter(score => score.gameweek === gameweek);
+        setLiveFixtures(gameweekScores);
       } catch (err) {
         console.error('Error fetching live scores:', err);
-      } finally {
-        setLiveLoading(false);
       }
     };
 
@@ -55,20 +37,37 @@ export function ViewFixtures({ gameweek }: ViewFixturesProps) {
 
   // Helper function to get live fixture data
   const getLiveFixture = (fixtureId: number) => {
-    return liveFixtures.find(f => f.id === fixtureId);
+    return liveFixtures.find(f => f.fixture_id === fixtureId);
   };
 
   // Helper function to get match status
-  const getMatchStatus = (fixture: any, liveFixture?: LiveFixture) => {
-    if (!liveFixture) return { status: 'upcoming', text: 'Upcoming', color: 'text-[#737373]' };
+  const getMatchStatus = (fixture: any, liveFixture?: LiveScore) => {
+    const now = new Date();
+    const kickoffTime = new Date(fixture.kickoff_utc);
     
-    if (liveFixture.finished) {
-      return { status: 'finished', text: 'FT', color: 'text-[#00E5A0]' };
-    } else if (liveFixture.started) {
-      return { status: 'live', text: `${liveFixture.minutes}'`, color: 'text-[#EE6C4D]' };
-    } else {
-      return { status: 'upcoming', text: 'Upcoming', color: 'text-[#737373]' };
+    // If we have live data, use it
+    if (liveFixture) {
+      if (liveFixture.status === 'finished') {
+        return { status: 'finished', text: 'FT', color: 'text-[#00E5A0]' };
+      } else if (liveFixture.status === 'live') {
+        return { status: 'live', text: 'Live', color: 'text-[#EE6C4D]' };
+      }
     }
+    
+    // If no live data, check if game time has passed
+    if (now > kickoffTime) {
+      // Game should be finished (assume 2 hours max game time)
+      const gameEndTime = new Date(kickoffTime.getTime() + 2 * 60 * 60 * 1000);
+      if (now > gameEndTime) {
+        return { status: 'finished', text: 'FT', color: 'text-[#00E5A0]' };
+      } else {
+        // Game might be in progress
+        return { status: 'live', text: 'Live', color: 'text-[#EE6C4D]' };
+      }
+    }
+    
+    // Game hasn't started yet
+    return { status: 'upcoming', text: 'Upcoming', color: 'text-[#737373]' };
   };
 
   if (loading) {
@@ -141,7 +140,7 @@ export function ViewFixtures({ gameweek }: ViewFixturesProps) {
         </div>
         
         {/* Live indicator */}
-        {liveFixtures.some(f => f.started && !f.finished) && (
+        {liveFixtures.some(f => f.status === 'live') && (
           <div className="flex items-center gap-2 px-3 py-1 bg-[#EE6C4D]/20 rounded-full">
             <Radio className="text-[#EE6C4D] animate-pulse" size={16} />
             <span className="text-[#EE6C4D] font-medium text-sm">LIVE MATCHES</span>
@@ -197,13 +196,13 @@ export function ViewFixtures({ gameweek }: ViewFixturesProps) {
                           {isFinished || isLive ? (
                             <div className="flex items-center gap-2">
                               <div className="text-2xl font-bold text-[#F8F8F6]">
-                                {liveFixture?.team_h_score ?? '-'}
+                                {liveFixture?.home_score ?? '-'}
                               </div>
                               <div className="w-8 h-8 rounded-full bg-[#404040] flex items-center justify-center">
                                 <span className="text-[#737373] font-bold text-xs">VS</span>
                               </div>
                               <div className="text-2xl font-bold text-[#F8F8F6]">
-                                {liveFixture?.team_a_score ?? '-'}
+                                {liveFixture?.away_score ?? '-'}
                               </div>
                             </div>
                           ) : (
