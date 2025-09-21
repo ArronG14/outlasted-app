@@ -37,7 +37,11 @@ export function ViewFixtures({ gameweek }: ViewFixturesProps) {
 
   // Helper function to get live fixture data
   const getLiveFixture = (fixtureId: number) => {
-    return liveFixtures.find(f => f.fixture_id === fixtureId);
+    const found = liveFixtures.find(f => f.fixture_id === fixtureId);
+    if (!found && liveFixtures.length > 0) {
+      console.log(`🔍 LiveFixture not found for ID ${fixtureId}. Available IDs:`, liveFixtures.map(f => f.fixture_id));
+    }
+    return found;
   };
 
   // Helper function to get match status
