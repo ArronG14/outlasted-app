@@ -100,14 +100,17 @@ export const handler: Handler = async (event, context) => {
 
 async function checkGameweekFinished(gameweek: number): Promise<boolean> {
   try {
-    const response = await fetch('https://fantasy.premierleague.com/api/fixtures/');
-    const data = await response.json();
+    // Check database for gameweek fixtures
+    const { data: fixtures, error } = await supabase
+      .from('fixtures')
+      .select('status')
+      .eq('gw', gameweek);
     
-    const gameweekFixtures = data.filter((fixture: any) => fixture.event === gameweek);
+    if (error) throw error;
     
-    if (gameweekFixtures.length === 0) return false;
+    if (!fixtures || fixtures.length === 0) return false;
     
-    return gameweekFixtures.every((fixture: any) => fixture.finished);
+    return fixtures.every(fixture => fixture.status === 'finished');
   } catch (error) {
     console.error('Error checking gameweek status:', error);
     return false;
@@ -116,25 +119,41 @@ async function checkGameweekFinished(gameweek: number): Promise<boolean> {
 
 async function processRoomResults(roomId: string, gameweek: number) {
   try {
-    // Get team results from FPL API
-    const response = await fetch('https://fantasy.premierleague.com/api/fixtures/');
-    const data = await response.json();
+    // Get team results from database
+    const { data: fixtures, error: fixturesError } = await supabase
+      .from('fixtures')
+      .select('home_team_id, away_team_id, home_score, away_score, status')
+      .eq('gw', gameweek);
     
-    const gameweekFixtures = data.filter((fixture: any) => fixture.event === gameweek);
+    if (fixturesError) throw fixturesError;
+    
+    // Get team names from database
+    const { data: teams, error: teamsError } = await supabase
+      .from('pl_teams')
+      .select('team_id, name');
+    
+    if (teamsError) throw teamsError;
+    
+    const teamMap = new Map(teams?.map(t => [t.team_id, t.name]) || []);
     const teamResults = new Map();
     
     // Process fixture results
-    for (const fixture of gameweekFixtures) {
-      if (fixture.finished && fixture.team_h_score !== null && fixture.team_a_score !== null) {
-        // Home team result
-        const homeResult = fixture.team_h_score > fixture.team_a_score ? 'win' : 
-                          fixture.team_h_score < fixture.team_a_score ? 'lose' : 'draw';
-        teamResults.set(fixture.team_h, homeResult);
+    for (const fixture of fixtures || []) {
+      if (fixture.status === 'finished' && fixture.home_score !== null && fixture.away_score !== null) {
+        const homeTeamName = teamMap.get(fixture.home_team_id);
+        const awayTeamName = teamMap.get(fixture.away_team_id);
         
-        // Away team result
-        const awayResult = fixture.team_a_score > fixture.team_h_score ? 'win' : 
-                          fixture.team_a_score < fixture.team_h_score ? 'lose' : 'draw';
-        teamResults.set(fixture.team_a, awayResult);
+        if (homeTeamName && awayTeamName) {
+          // Home team result
+          const homeResult = fixture.home_score > fixture.away_score ? 'win' : 
+                            fixture.home_score < fixture.away_score ? 'lose' : 'draw';
+          teamResults.set(homeTeamName, homeResult);
+          
+          // Away team result
+          const awayResult = fixture.away_score > fixture.home_score ? 'win' : 
+                            fixture.away_score < fixture.home_score ? 'lose' : 'draw';
+          teamResults.set(awayTeamName, awayResult);
+        }
       }
     }
     
