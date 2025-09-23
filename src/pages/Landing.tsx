@@ -26,13 +26,13 @@ export function Landing({ nextUrl }: LandingProps) {
               />
               <FeatureCard
                 icon={<Trophy size={32} />}
-                title="Real Stakes"
-                description="Winner takes the pot. Share deals when it matters."
+                title="Season Glory"
+                description="Climb the ladder, build streaks, and collect trophies each season."
               />
               <FeatureCard
                 icon={<Crown size={32} />}
                 title="Elite Community"
-                description="Private rooms and invite-only leagues."
+                description="Join public rooms, create private leagues, and spark exclusive rivalries."
               />
             </div>
           </div>
