@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Crown, ExternalLink, Clock, Trophy } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, Crown, ExternalLink, Clock, Calendar } from 'lucide-react';
 import { RoomService } from '../../services/roomService';
 import { RoomStatusService, RoomStatusInfo } from '../../services/roomStatusService';
 import { useNavigate } from 'react-router-dom';
 import { useAuthSimple } from '../../hooks/useAuthSimple';
+import { Button } from '../ui/Button';
 
 interface UserRoom {
   id: string;
@@ -137,8 +138,15 @@ export function ActiveRooms() {
         {ongoingRooms.length === 0 ? (
           <div className="bg-[#262626] rounded-xl p-8 text-center">
             <Clock className="mx-auto mb-4 text-[#737373]" size={48} />
-            <p className="text-[#737373] text-lg">No ongoing games</p>
-            <p className="text-[#737373] mt-2">Join or create a room to start playing</p>
+            <p className="text-[#F8F8F6] text-lg mb-2">No games yet.</p>
+            <p className="text-[#737373] mb-6">Join a public room to get started.</p>
+            <Button 
+              onClick={() => navigate('/dashboard')}
+              className="bg-[#00E5A0] text-black hover:bg-[#00E5A0]/90"
+            >
+              <Users size={20} />
+              Join Public Room
+            </Button>
           </div>
         ) : (
           <div className="space-y-3">
@@ -158,9 +166,17 @@ export function ActiveRooms() {
         <h2 className="text-2xl font-bold mb-6 text-[#F8F8F6]">Upcoming Games</h2>
         {upcomingRooms.length === 0 ? (
           <div className="bg-[#262626] rounded-xl p-8 text-center">
-            <Users className="mx-auto mb-4 text-[#737373]" size={48} />
-            <p className="text-[#737373] text-lg">No upcoming games</p>
-            <p className="text-[#737373] mt-2">Rooms you've joined will appear here</p>
+            <Calendar className="mx-auto mb-4 text-[#737373]" size={48} />
+            <p className="text-[#F8F8F6] text-lg mb-2">Keep an eye on fixtures</p>
+            <p className="text-[#737373] mb-6">to plan your picks.</p>
+            <Button 
+              onClick={() => navigate('/fixtures')}
+              variant="outline"
+              className="border-[#262626] text-[#D4D4D4] hover:bg-[#262626]"
+            >
+              <Calendar size={20} />
+              View Fixtures
+            </Button>
           </div>
         ) : (
           <div className="space-y-3">
