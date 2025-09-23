@@ -197,7 +197,7 @@ export class PlayerStatusService {
 
   /**
    * Get player's historic picks for a room
-   * Only shows picks from gameweeks that have finished
+   * Shows picks that have results (win/lose/draw) regardless of gameweek finish status
    */
   static async getPlayerHistoricPicks(
     roomId: string, 
@@ -219,7 +219,7 @@ export class PlayerStatusService {
       `)
       .eq('room_id', roomId)
       .eq('player_id', playerId)
-      .eq('gameweeks.is_finished', true) // Only show picks from finished gameweeks
+      .in('result', ['win', 'lose', 'draw']) // Show picks that have results
       .order('gameweek', { ascending: true });
 
     if (error) {
@@ -231,7 +231,7 @@ export class PlayerStatusService {
       teamName: pick.team_name,
       result: pick.result,
       deadline: new Date((pick.gameweeks as any).deadline_utc),
-      isFinished: true // All historic picks are from finished gameweeks
+      isFinished: (pick.gameweeks as any).is_finished
     })) || [];
   }
 }

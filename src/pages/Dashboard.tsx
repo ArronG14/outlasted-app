@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Clock, Users, Trophy, Plus, Calendar } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { NextDeadline } from '../components/dashboard/NextDeadline';
@@ -6,14 +6,18 @@ import { UpcomingFixtures } from '../components/dashboard/UpcomingFixtures';
 import { ActiveRooms } from '../components/dashboard/ActiveRooms';
 import { CreateRoomForm } from '../components/rooms/CreateRoomForm';
 import { JoinRoomModal } from '../components/rooms/JoinRoomModal';
+import { WeeklyBrief } from '../components/dashboard/WeeklyBrief';
 import { useAuthSimple } from '../hooks/useAuthSimple';
 import { useNavigate } from 'react-router-dom';
+import { WeeklyBriefService, WeeklyBriefData } from '../services/weeklyBriefService';
 
 export function Dashboard() {
   const { user, signOut } = useAuthSimple();
   const navigate = useNavigate();
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showJoinRoom, setShowJoinRoom] = useState(false);
+  const [showWeeklyBrief, setShowWeeklyBrief] = useState(false);
+  const [weeklyBriefData, setWeeklyBriefData] = useState<WeeklyBriefData | null>(null);
 
   const handleRoomCreated = (roomId: string) => {
     navigate(`/rooms/${roomId}`);
@@ -21,6 +25,44 @@ export function Dashboard() {
 
   const handleRoomJoined = (roomId: string) => {
     navigate(`/rooms/${roomId}`);
+  };
+
+  // Check for weekly brief on component mount
+  useEffect(() => {
+    const checkWeeklyBrief = async () => {
+      if (!user) return;
+
+      try {
+        const shouldShow = await WeeklyBriefService.shouldShowWeeklyBrief(user.id);
+        if (shouldShow) {
+          const data = await WeeklyBriefService.getWeeklyBriefData(user.id);
+          setWeeklyBriefData(data);
+          setShowWeeklyBrief(true);
+          
+          // Track analytics
+          if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('event', 'weekly_brief_shown');
+          }
+        }
+      } catch (error) {
+        console.error('Error checking weekly brief:', error);
+      }
+    };
+
+    checkWeeklyBrief();
+  }, [user]);
+
+  const handleWeeklyBriefClose = () => {
+    if (weeklyBriefData) {
+      WeeklyBriefService.markWeeklyBriefAsSeen(weeklyBriefData.nextGameweek);
+    }
+    setShowWeeklyBrief(false);
+  };
+
+  const handleWeeklyBriefDontShowAgain = () => {
+    if (weeklyBriefData) {
+      WeeklyBriefService.markWeeklyBriefAsDismissed(weeklyBriefData.nextGameweek);
+    }
   };
 
   return (
@@ -133,6 +175,16 @@ export function Dashboard() {
         <JoinRoomModal
           onClose={() => setShowJoinRoom(false)}
           onSuccess={handleRoomJoined}
+        />
+      )}
+
+      {/* Weekly Brief Modal */}
+      {showWeeklyBrief && weeklyBriefData && (
+        <WeeklyBrief
+          isOpen={showWeeklyBrief}
+          onClose={handleWeeklyBriefClose}
+          onDontShowAgain={handleWeeklyBriefDontShowAgain}
+          data={weeklyBriefData}
         />
       )}
     </div>
