@@ -7,6 +7,7 @@ import { InvitePage } from './pages/InvitePage';
 import { RoomPage } from './pages/RoomPage';
 import { FixturesPage } from './pages/FixturesPage';
 import { TestPage } from './pages/TestPage';
+import { LoginForm } from './components/auth/LoginForm';
 import { useAuth } from './hooks/useAuth';
 
 function LandingWrapper() {
@@ -60,6 +61,8 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<LandingWrapper />} />
+        <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <LoginForm />} />
+        <Route path="/signup" element={user ? <Navigate to="/dashboard" /> : <LoginForm />} />
         <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/?next=/dashboard" />} />
         <Route path="/join" element={user ? <JoinPage /> : <Navigate to="/?next=/join" />} />
         <Route path="/invite/:code" element={user ? <InvitePage /> : <Navigate to="/" />} />
