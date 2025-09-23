@@ -21,18 +21,18 @@ export function Landing({ nextUrl }: LandingProps) {
             <div className="grid md:grid-cols-3 gap-6">
               <FeatureCard
                 icon={<Target size={32} />}
-                title="Pick"
-                description="Choose your team each gameweek. Your strategy decides how long you survive."
+                title="Strategic Picks"
+                description="One team per gameweek. No reuse. Pure strategy."
               />
               <FeatureCard
                 icon={<Trophy size={32} />}
-                title="Survive"
-                description="Win and move on. Miss and you're in trouble — unless you've got a trick up your sleeve."
+                title="Real Stakes"
+                description="Winner takes all. Split deals when it matters."
               />
               <FeatureCard
                 icon={<Crown size={32} />}
-                title="Outlast"
-                description="Be the last one standing to claim the crown. Play again instantly when a season ends."
+                title="Elite Community"
+                description="Private rooms. Invite-only leagues."
               />
             </div>
           </div>

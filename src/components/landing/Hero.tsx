@@ -5,7 +5,7 @@ export function Hero() {
     <div className="text-center space-y-8 animate-fade-in">
       {/* Premium Badge */}
       <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-4 py-2 animate-float">
-        <span className="text-2xl">🔥</span>
+        <span className="text-2xl">👑</span>
         <span className="landing-text-primary font-medium">Premium Football Survival</span>
       </div>
 
@@ -16,7 +16,7 @@ export function Hero() {
         </h1>
         
         <p className="text-xl md:text-2xl landing-text-body max-w-2xl mx-auto leading-relaxed animate-slide-up">
-          Each week, make your pick. Survive the results. Outlast your mates.
+          Survive the week. Take the pot. Join the most exclusive football prediction survival game.
         </p>
       </div>
     </div>
