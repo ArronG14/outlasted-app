@@ -1,11 +1,12 @@
 import React from 'react';
+import { Button } from '../ui/Button';
 
 export function Hero() {
   return (
     <div className="text-center space-y-8 animate-fade-in">
       {/* Premium Badge */}
       <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-4 py-2 animate-float">
-        <span className="text-2xl">👑</span>
+        <span className="text-2xl">🔥</span>
         <span className="landing-text-primary font-medium">Premium Football Survival</span>
       </div>
 
@@ -16,8 +17,18 @@ export function Hero() {
         </h1>
         
         <p className="text-xl md:text-2xl landing-text-body max-w-2xl mx-auto leading-relaxed animate-slide-up">
-          Survive the week. Take the pot. Join the most exclusive football prediction survival game.
+          Make your pick. Survive the results. Outlast your friends in football's knockout survival game.
         </p>
+
+        {/* Play Now Free Button */}
+        <div className="pt-4">
+          <Button
+            onClick={() => window.location.href = '/signup'}
+            className="bg-jade-500 hover:bg-jade-400 text-white font-semibold px-8 py-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-jade-500/25 hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            Play Now Free
+          </Button>
+        </div>
       </div>
     </div>
   );

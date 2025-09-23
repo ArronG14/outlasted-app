@@ -172,7 +172,7 @@ export function LoginForm({ nextUrl }: LoginFormProps) {
           {isSignUp ? 'Create Account' : 'Welcome Back'}
         </h2>
         <p className="landing-text-body">
-          {isSignUp ? 'Join the survival game' : 'Sign in to your survival account'}
+          {isSignUp ? 'Join the survival game' : 'Ready to survive another week?'}
         </p>
       </div>
 
@@ -284,7 +284,7 @@ export function LoginForm({ nextUrl }: LoginFormProps) {
           {isSignUp ? <UserPlus size={20} /> : <Mail size={20} />}
           {loading 
             ? (isSignUp ? 'Creating Account...' : 'Signing In...') 
-            : (isSignUp ? 'Create Account' : 'Sign In')
+            : (isSignUp ? 'Create Account' : 'Sign In & Play')
           }
         </Button>
       </form>
@@ -327,7 +327,7 @@ export function LoginForm({ nextUrl }: LoginFormProps) {
 
       <div className="mt-8 text-center">
         <p className="landing-text-muted">
-          {isSignUp ? 'Already have an account?' : 'New to OUTLASTED?'}{' '}
+          {isSignUp ? 'Already have an account?' : 'New here?'}{' '}
           <button 
             type="button"
             onClick={() => {
@@ -344,7 +344,7 @@ export function LoginForm({ nextUrl }: LoginFormProps) {
             }}
             className="text-[#00E5A0] hover:underline font-medium animate-aqua-hover"
           >
-            {isSignUp ? 'Sign in' : 'Create account'}
+            {isSignUp ? 'Sign in' : 'Play Now Free'}
           </button>
         </p>
       </div>
