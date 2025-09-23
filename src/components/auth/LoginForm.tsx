@@ -284,7 +284,7 @@ export function LoginForm({ nextUrl }: LoginFormProps) {
           {isSignUp ? <UserPlus size={20} /> : <Mail size={20} />}
           {loading 
             ? (isSignUp ? 'Creating Account...' : 'Signing In...') 
-            : (isSignUp ? 'Create Account' : 'Sign In & Play')
+            : (isSignUp ? 'Play Now Free' : 'Sign In & Play')
           }
         </Button>
       </form>

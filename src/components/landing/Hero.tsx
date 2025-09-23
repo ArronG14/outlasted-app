@@ -20,16 +20,6 @@ export function Hero() {
         <p className="text-xl md:text-2xl landing-text-body max-w-2xl mx-auto leading-relaxed animate-slide-up">
           Make your pick. Survive the results. Outlast your friends in football's knockout survival game.
         </p>
-
-        {/* Play Now Free Button */}
-        <div className="pt-4">
-          <Button
-            onClick={() => window.location.href = '/signup'}
-            className="bg-jade-500 hover:bg-jade-400 text-white font-semibold px-8 py-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-jade-500/25 hover:shadow-xl transform hover:-translate-y-0.5"
-          >
-            Play Now Free
-          </Button>
-        </div>
       </div>
     </div>
   );
