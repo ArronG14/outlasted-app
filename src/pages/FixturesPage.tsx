@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Clock, Radio } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { ViewFixtures } from '../components/fixtures/ViewFixtures';
 import { FPLService } from '../services/fplService';
 import { Gameweek } from '../types/fpl';
@@ -76,20 +77,20 @@ export function FixturesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#171717] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00E5A0]"></div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#171717] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-[#DC2626] text-lg mb-4">{error}</p>
+          <p className="text-destructive text-lg mb-4">{error}</p>
           <Button
             onClick={() => window.location.reload()}
-            className="bg-[#00E5A0] text-black hover:bg-[#00E5A0]/90"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             Retry
           </Button>
@@ -100,23 +101,24 @@ export function FixturesPage() {
 
   return (
     <div 
-      className="min-h-screen bg-[#171717] text-[#F8F8F6]"
+      className="min-h-screen bg-background text-foreground"
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
       {/* Header */}
-      <header className="border-b border-[#262626] bg-[#171717]/95 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold text-[#00E5A0]">OUTLASTED</h1>
-              <span className="text-[#737373]">Fixtures</span>
+              <h1 className="text-2xl font-bold text-primary">OUTLASTED</h1>
+              <span className="text-muted-foreground">Fixtures</span>
             </div>
             <div className="flex items-center gap-4">
+              <ThemeToggle />
               <Button
                 onClick={() => window.history.back()}
                 variant="outline"
-                className="border-[#262626] text-[#D4D4D4] hover:bg-[#262626]"
+                className="border-border text-foreground hover:bg-accent/10"
               >
                 Back
               </Button>
@@ -127,11 +129,11 @@ export function FixturesPage() {
 
       <div className="container mx-auto px-6 py-8">
         {/* Gameweek Navigation */}
-        <div className="bg-[#262626] p-6 rounded-xl mb-8">
+        <div className="bg-card p-6 rounded-xl mb-8 border border-border">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <Calendar className="text-[#3D5A80]" size={24} />
-              <h2 className="text-xl font-semibold">Premier League Fixtures</h2>
+              <Calendar className="text-secondary" size={24} />
+              <h2 className="text-xl font-semibold text-card-foreground">Premier League Fixtures</h2>
             </div>
             
             {/* Gameweek Selector */}
@@ -141,17 +143,17 @@ export function FixturesPage() {
                 disabled={currentIndex <= 0}
                 variant="outline"
                 size="sm"
-                className="border-[#262626] text-[#D4D4D4] hover:bg-[#262626] disabled:opacity-50"
+                className="border-border text-foreground hover:bg-accent/10 disabled:opacity-50"
               >
                 <ChevronLeft size={16} />
               </Button>
               
               <div className="text-center">
-                <div className="text-2xl font-bold text-[#00E5A0]">
+                <div className="text-2xl font-bold text-primary">
                   Gameweek {currentGameweek}
                 </div>
                 {currentGwData && (
-                  <div className="flex items-center gap-2 text-[#737373] text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm">
                     <Clock size={14} />
                     <span>
                       Deadline: {new Date(currentGwData.deadline_utc).toLocaleDateString('en-GB', {
@@ -172,7 +174,7 @@ export function FixturesPage() {
                 disabled={currentIndex >= availableGameweeks.length - 1}
                 variant="outline"
                 size="sm"
-                className="border-[#262626] text-[#D4D4D4] hover:bg-[#262626] disabled:opacity-50"
+                className="border-border text-foreground hover:bg-accent/10 disabled:opacity-50"
               >
                 <ChevronRight size={16} />
               </Button>
@@ -182,30 +184,30 @@ export function FixturesPage() {
           {/* Gameweek Status Indicators */}
           <div className="flex gap-4 text-sm">
             {currentOngoingGameweek && currentGameweek === currentOngoingGameweek.gw && (
-              <span className="px-3 py-1 bg-[#EE6C4D]/20 text-[#EE6C4D] rounded-full flex items-center gap-1">
+              <span className="px-3 py-1 bg-accent/20 text-accent rounded-full flex items-center gap-1">
                 <Radio className="animate-pulse" size={12} />
                 Currently Ongoing
               </span>
             )}
             {nextDeadline && currentGameweek === nextDeadline.gw && !currentOngoingGameweek && (
-              <span className="px-3 py-1 bg-[#3D5A80]/20 text-[#3D5A80] rounded-full">
+              <span className="px-3 py-1 bg-secondary/20 text-secondary rounded-full">
                 Next Deadline
               </span>
             )}
             {currentGwData?.is_finished && (
-              <span className="px-3 py-1 bg-[#737373]/20 text-[#737373] rounded-full">
+              <span className="px-3 py-1 bg-muted/20 text-muted-foreground rounded-full">
                 Finished
               </span>
             )}
             {!currentOngoingGameweek && !nextDeadline && (
-              <span className="px-3 py-1 bg-[#C9B037]/20 text-[#C9B037] rounded-full">
+              <span className="px-3 py-1 bg-primary/20 text-primary rounded-full">
                 Upcoming
               </span>
             )}
           </div>
 
           {/* Keyboard Navigation Hint */}
-          <div className="mt-4 text-xs text-[#737373]">
+          <div className="mt-4 text-xs text-muted-foreground">
             💡 Use arrow keys (← →) to navigate between gameweeks
           </div>
         </div>

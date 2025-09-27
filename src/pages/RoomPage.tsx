@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Copy, Crown, RefreshCw } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { GameweekFixtures } from '../components/rooms/GameweekFixtures';
 import { PickInterface } from '../components/rooms/PickInterface';
 import { DealSystem } from '../components/rooms/DealSystem';
@@ -158,7 +159,7 @@ export function RoomPage() {
         // This would be detected by the backend and we can show the notification
         // For now, we'll add a simple check - in a real implementation, 
         // this would be triggered by a WebSocket or polling mechanism
-        checkForAllPlayersEliminated(roomData);
+        checkForAllPlayersEliminated();
       }
     } catch (err) {
       console.error('Error refreshing data:', err);
@@ -167,7 +168,7 @@ export function RoomPage() {
     }
   };
 
-  const checkForAllPlayersEliminated = (roomData: RoomDetails) => {
+  const checkForAllPlayersEliminated = () => {
     // This is a placeholder - in a real implementation, you would:
     // 1. Check if the room just had all players eliminated
     // 2. This could be done via a WebSocket event or by checking room history
@@ -312,34 +313,35 @@ export function RoomPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="bg-[#171717] border-b border-[#404040]">
+      <div className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <Button
                 onClick={() => navigate('/dashboard')}
                 variant="outline"
-                className="border-[#404040] text-white hover:bg-[#404040] mr-4"
+                className="border-border text-foreground hover:bg-accent/10 mr-4"
               >
                 <ArrowLeft size={20} />
               </Button>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-semibold">{room.name}</h1>
+                  <h1 className="text-xl font-semibold text-card-foreground">{room.name}</h1>
                   {refreshing && (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00E5A0]"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
                   )}
                 </div>
-                <p className="text-sm text-[#737373]">Room Code: {room.invite_code}</p>
+                <p className="text-sm text-muted-foreground">Room Code: {room.invite_code}</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
+              <ThemeToggle />
               <Button
                 onClick={refreshAllData}
                 variant="outline"
-                className="border-[#404040] text-white hover:bg-[#404040]"
+                className="border-border text-foreground hover:bg-accent/10"
                 disabled={refreshing}
               >
                 <RefreshCw size={16} className={`mr-2 ${refreshing ? 'animate-spin' : ''}`} />
@@ -348,7 +350,7 @@ export function RoomPage() {
               <Button
                 onClick={() => copyToClipboard(`${window.location.origin}/rooms/${room.id}`)}
                 variant="outline"
-                className="border-[#404040] text-white hover:bg-[#404040]"
+                className="border-border text-foreground hover:bg-accent/10"
               >
                 <Copy size={16} className="mr-2" />
                 {copySuccess ? 'Copied!' : 'Share'}
