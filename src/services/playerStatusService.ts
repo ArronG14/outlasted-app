@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { RoomStatusService } from './roomStatusService';
 
 export interface PlayerStatusInfo {
   status: 'awaiting_pick' | 'picked' | 'active' | 'eliminated';
@@ -49,6 +50,10 @@ export class PlayerStatusService {
     const deadlinePassed = now > deadline;
     const gameweekFinished = gameweekData.is_finished;
 
+    // Get room status to determine pick visibility
+    const roomStatus = await RoomStatusService.getRoomStatus(roomId);
+    const isRoundInProgress = roomStatus.status === 'active'; // "Round X In Progress"
+
     // Get player's pick for this gameweek
     const { data: pickData } = await supabase
       .from('picks')
@@ -83,7 +88,7 @@ export class PlayerStatusService {
       // Player is eliminated - always show eliminated status
       status = 'eliminated';
       displayText = 'Eliminated';
-      if (hasPick && deadlinePassed) {
+      if (hasPick && isRoundInProgress) {
         teamName = pickData.team_name;
         displayText = `Eliminated (${pickData.team_name})`;
       }
@@ -112,14 +117,23 @@ export class PlayerStatusService {
         if (pickResult === 'win') {
           status = 'active';
           displayText = `${pickData.team_name} (Win)`;
+          teamName = pickData.team_name;
         } else if (pickResult === 'lose' || pickResult === 'draw') {
           status = 'eliminated';
           displayText = `${pickData.team_name} (Eliminated)`;
-        } else {
-          // Pick result is still pending - show as pending
-          status = 'picked';
           teamName = pickData.team_name;
-          displayText = `${pickData.team_name} (Pending)`;
+        } else {
+          // Pick result is still pending
+          if (isRoundInProgress) {
+            // Room is "In Progress" - show team names
+            status = 'picked';
+            teamName = pickData.team_name;
+            displayText = `${pickData.team_name} (Pending)`;
+          } else {
+            // Room is still in "Picks" phase - hide team names
+            status = 'picked';
+            displayText = 'Picked';
+          }
         }
       } else {
         // Only mark as eliminated if this is the room's current gameweek
@@ -134,10 +148,9 @@ export class PlayerStatusService {
         }
       }
     } else {
-      // Before deadline - show pick status
+      // Before deadline - show pick status (hide team names)
       if (hasPick) {
         status = 'picked';
-        teamName = pickData.team_name;
         displayText = 'Picked';
       } else {
         status = 'awaiting_pick';
@@ -197,7 +210,7 @@ export class PlayerStatusService {
 
   /**
    * Get player's historic picks for a room
-   * Shows picks that have results (win/lose/draw) regardless of gameweek finish status
+   * Shows picks from past gameweeks and picks with determined results
    */
   static async getPlayerHistoricPicks(
     roomId: string, 
@@ -209,6 +222,15 @@ export class PlayerStatusService {
     deadline: Date;
     isFinished: boolean;
   }>> {
+    // Get current room gameweek to determine what counts as "historic"
+    const { data: roomData } = await supabase
+      .from('rooms')
+      .select('current_gameweek')
+      .eq('id', roomId)
+      .single();
+
+    const currentGameweek = roomData?.current_gameweek || 1;
+
     const { data: picks, error } = await supabase
       .from('picks')
       .select(`
@@ -219,7 +241,7 @@ export class PlayerStatusService {
       `)
       .eq('room_id', roomId)
       .eq('player_id', playerId)
-      .in('result', ['win', 'lose', 'draw']) // Show picks that have results
+      .or(`gameweek.lt.${currentGameweek},result.neq.pending`) // Show past gameweeks OR picks with determined results
       .order('gameweek', { ascending: true });
 
     if (error) {
